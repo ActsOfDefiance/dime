@@ -10,21 +10,14 @@ from publisher.agent import root_agent, researcher, writer
 
 
 def get_agent_health() -> Dict[str, Any]:
-    """Get health status of all agents."""
+    """Get health status of all agents dynamically."""
+    all_agents = [root_agent, researcher, writer]
     return {
         "status": "healthy",
         "agents": {
-            "root_agent": {
-                "name": root_agent.name,
-                "model": root_agent.model,
-                "status": "active",
-            },
-            "researcher": {
-                "name": researcher.name,
-                "model": researcher.model,
-                "status": "active",
-            },
-            "writer": {"name": writer.name, "model": writer.model, "status": "active"},
+            agent.name: agent.get_agent_info()
+            for agent in all_agents
+            if hasattr(agent, "get_agent_info")
         },
     }
 
