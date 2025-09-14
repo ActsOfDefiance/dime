@@ -168,3 +168,4 @@ Every commit must:
 - **Content Focus**: System targets political liberation movement analysis
 - **Audience**: Liberal audience, 20-40 years old, college-educated or lay interest in political history
 - **Quality Standards**: Emphasis on source citation and accuracy for historical content
+- Never use inline imports. Imports always go in the header in accordance with PEP8
