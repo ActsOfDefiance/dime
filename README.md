@@ -218,8 +218,8 @@ uv sync --dev
 uv run pre-commit install
 
 # Run quality checks
-uv run black .
-uv run flake8
+uv run ruff format .
+uv run ruff check .
 uv run mypy dime/
 
 # Run tests
