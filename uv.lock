@@ -174,7 +174,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "google-adk", specifier = ">=0.1.0" }]
+requires-dist = [{ name = "google-adk", specifier = ">=1.0.0" }]
 
 [[package]]
 name = "docstring-parser"

@@ -15,33 +15,34 @@ Python package called "dime" - a multi-agent content creation system for politic
 
 ### Running the Code
 **Important**: Always run applications via `uv`, never call `python` directly.
-- **Run the integrated application**: `uv run python -m dime.app`
+- **Start the web server**: `uv run python -m dime start` (starts ADK web interface on http://localhost:8000)
+- **Health check**: `uv run python -m dime health` (validates configuration and system status)
 - **Run any Python file**: `uv run python <filename.py>`
 
-## Current Project State & Critical Issues
+## Current Project State
 
-### Known Issues (Phase 0: Foundation Fix)
-The project is currently in Phase 0 with critical runtime issues that must be resolved:
+### ✅ Phase 0: Foundation - COMPLETED
+The foundation phase has been successfully completed with all critical issues resolved:
 
-1. **Critical Bug**: `publisher/agent.py` has undefined `researcher` and `writer` variables (line 30)
-   - Causes NameError on system startup
-   - Blocks all functionality
-   - Must be fixed before any development can proceed
-
-2. **Missing Project Structure**: The documented `dime/` package structure doesn't exist
-   - Only basic `dime/__init__.py` and `dime/config/` modules are implemented
-   - Most of the planned architecture is not yet built
-
-3. **Testing Framework**: No testing infrastructure exists
-   - No `/tests` directory
-   - No pytest configuration
-   - Required for Phase 0 completion
+1. **✅ Fixed Critical Bugs**: All agent reference errors in `publisher/agent.py` resolved
+2. **✅ CLI Interface**: Implemented CLI with `health` and `start` commands
+3. **✅ ADK Web Interface**: Functional web interface using Google ADK's `get_fast_api_app()`
+4. **✅ Agent System**: Proper ADK agent structure with automatic discovery
+5. **✅ Configuration System**: Simplified case-sensitive configuration with automatic field mapping
 
 ### Current Working Components
-- **Configuration System**: Pydantic Settings with environment validation in `dime/config/settings.py`
-- **Environment Management**: direnv integration with `.envrc` (contains secrets, not tracked)
-- **Package Management**: Modern uv-based dependency management
-- **Git Workflow**: Gitflow methodology with protected main/develop branches
+- **✅ Configuration System**: Simplified Pydantic Settings with case-sensitive environment variable mapping
+- **✅ CLI Interface**: `uv run python -m dime health` and `uv run python -m dime start` commands
+- **✅ ADK Web Interface**: Functional web interface at http://localhost:8000/ when server is running
+- **✅ Agent Discovery**: Proper ADK agent structure in `agents/dime_agent/` directory
+- **✅ Environment Management**: direnv integration with `.envrc` (contains secrets, not tracked)
+- **✅ Package Management**: Modern uv-based dependency management
+- **✅ Git Workflow**: Gitflow methodology with protected main/develop branches
+
+### Next Phase Requirements
+- **Testing Framework**: Set up pytest framework with ADK testing patterns
+- **Enhanced Agent Tools**: Implement more sophisticated content creation tools
+- **Database Integration**: Full PostgreSQL and Redis integration
 
 ## Architecture Overview
 
@@ -66,14 +67,20 @@ The system is designed as a 7-stage content creation pipeline:
 ### Current File Structure
 ```
 dime/
-├── dime/                     # Main package (minimal implementation)
+├── dime/                     # Main package (✅ implemented)
 │   ├── __init__.py          # Package initialization
-│   └── config/              # Configuration system (working)
+│   ├── app.py               # ✅ FastAPI application with ADK integration
+│   ├── __main__.py          # ✅ CLI entry point (health, start commands)
+│   └── config/              # ✅ Configuration system (working)
 │       ├── __init__.py
-│       └── settings.py      # Pydantic Settings with environment validation
-├── publisher/               # Legacy agent code (has critical bugs)
+│       └── settings.py      # ✅ Simplified Pydantic Settings with case-sensitive mapping
+├── agents/                  # ✅ ADK agent directory
+│   └── dime_agent/          # ✅ Main content creation agent
+│       ├── __init__.py
+│       └── agent.py         # ✅ ADK agent with research and writing tools
+├── publisher/               # ✅ Legacy agent code (fixed)
 │   ├── __init__.py
-│   └── agent.py            # Contains undefined variable references
+│   └── agent.py            # ✅ Fixed undefined variable references
 ├── docs/                    # Project documentation
 │   └── github_issues/       # Detailed implementation requirements
 ├── .envrc                   # Environment variables (contains secrets, git-ignored)
@@ -133,11 +140,30 @@ dime/
 - **Memory Usage**: Base footprint <200MB
 - **Agent Response**: Basic conversations <5 seconds
 
-## Phase 0 Development Priority
-1. **Fix Critical Bug**: Resolve undefined agent references in `publisher/agent.py`
-2. **Establish Testing**: Set up pytest framework with ADK testing patterns
-3. **Create Basic Interface**: Implement CLI interface and ADK web interface
-4. **Update Documentation**: Align documentation with actual implementation
+## Development Interfaces
+
+### CLI Interface
+- **Health Check**: `uv run python -m dime health` - validates configuration and displays system status
+- **Start Server**: `uv run python -m dime start` - launches ADK web interface on http://localhost:8000
+- **Custom Host/Port**: `uv run python -m dime start --host 127.0.0.1 --port 3000`
+
+### ADK Web Interface
+When running `uv run python -m dime start`, the following interfaces become available:
+- **Main Interface**: http://localhost:8000/ - Interactive ADK agent conversations
+- **Developer UI**: http://localhost:8000/dev-ui/ - ADK development and debugging tools
+- **Agent Discovery**: Automatic discovery and loading of agents from `agents/` directory
+
+### Configuration System
+- **Environment Variables**: All configuration via uppercase environment variables in `.envrc`
+- **Case Sensitivity**: Configuration uses case-sensitive field mapping (e.g., `DATABASE_URL` → `DATABASE_URL`)
+- **Auto-Discovery**: Field names automatically map to environment variables without prefixes or complex field mappings
+- **Validation**: Built-in validation with descriptive error messages
+
+## Next Phase Development Priority
+1. **✅ COMPLETED**: Fix Critical Bug - Resolved undefined agent references in `publisher/agent.py`
+2. **✅ COMPLETED**: Create Basic Interface - Implemented CLI interface and ADK web interface
+3. **✅ COMPLETED**: Update Documentation - Aligned documentation with actual implementation
+4. **TODO**: Establish Testing - Set up pytest framework with ADK testing patterns
 
 ## Commit and Testing Policy
 - **100% test pass before committing**: No skipping tests allowed
@@ -169,3 +195,4 @@ Every commit must:
 - **Audience**: Liberal audience, 20-40 years old, college-educated or lay interest in political history
 - **Quality Standards**: Emphasis on source citation and accuracy for historical content
 - Never use inline imports. Imports always go in the header in accordance with PEP8
+- always start with the simplest approach possible

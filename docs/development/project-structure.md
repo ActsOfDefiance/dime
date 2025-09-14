@@ -1,53 +1,89 @@
 # Dime Project Structure & Development Guide
 
-**Version**: 1.0  
-**Date**: 2025-01-30  
-**Status**: Development Ready  
+**Version**: 2.0
+**Date**: 2025-01-14
+**Status**: Phase 0 Complete - Foundation Implemented
 
-## Project Directory Structure
+## Current Project Directory Structure
 
 ```
 dime/
-├── README.md                      # Project overview and quick start
-├── CLAUDE.md                      # Claude Code development guidelines
-├── pyproject.toml                 # Python project configuration
-├── uv.lock                        # Dependency lock file
-├── .env.example                   # Environment variables template
-├── .envrc                         # direnv configuration
-├── docker-compose.yml             # Local development environment
-├── docker-compose.prod.yml        # Production deployment (future)
+├── README.md                      # ✅ Project overview with current status
+├── CLAUDE.md                      # ✅ Claude Code development guidelines
+├── pyproject.toml                 # ✅ Python project configuration
+├── uv.lock                        # ✅ Dependency lock file
+├── .envrc                         # ✅ direnv configuration (contains secrets)
 │
-├── src/                           # Source code
-│   └── dime/                      # Main application package
-│       ├── __init__.py
-│       ├── main.py                # FastAPI application entry point
-│       ├── config/                # Configuration management
-│       │   ├── __init__.py
-│       │   ├── settings.py        # Application settings
-│       │   ├── database.py        # Database configuration
-│       │   └── agents.py          # Agent configuration
-│       ├── agents/                # AI Agent implementations
-│       │   ├── __init__.py
-│       │   ├── base.py            # Base agent class
-│       │   ├── fact_checker.py    # Fact checking agent
-│       │   ├── writer.py          # Content writing agent
-│       │   ├── editor.py          # Content editing agent
-│       │   ├── graphics.py        # Graphics generation agent
-│       │   └── assembly.py        # Document assembly agent
-│       ├── api/                   # FastAPI routes and endpoints
-│       │   ├── __init__.py
-│       │   ├── articles.py        # Article management endpoints
-│       │   ├── research.py        # Research document endpoints
-│       │   ├── agents.py          # Agent processing endpoints
-│       │   ├── approvals.py       # Human approval endpoints
-│       │   ├── graphics.py        # Graphics management endpoints
-│       │   ├── auth.py            # Authentication endpoints
-│       │   └── admin.py           # Admin and monitoring endpoints
-│       ├── models/                # Database models
-│       │   ├── __init__.py
-│       │   ├── base.py            # Base model class
-│       │   ├── article.py         # Article and workflow models
-│       │   ├── agent.py           # Agent processing models
+├── dime/                          # ✅ Main application package
+│   ├── __init__.py                # ✅ Package initialization
+│   ├── app.py                     # ✅ FastAPI application with ADK integration
+│   ├── __main__.py                # ✅ CLI entry point (health, start commands)
+│   └── config/                    # ✅ Configuration management
+│       ├── __init__.py            # ✅ Configuration exports
+│       └── settings.py            # ✅ Simplified case-sensitive Pydantic settings
+│
+├── agents/                        # ✅ ADK agent directory
+│   └── dime_agent/                # ✅ Main content creation agent
+│       ├── __init__.py            # ✅ Agent package
+│       └── agent.py               # ✅ Research and writing agent implementation
+│
+├── publisher/                     # ✅ Legacy agent code (fixed)
+│   ├── __init__.py                # ✅ Package init
+│   └── agent.py                   # ✅ Fixed undefined references
+│
+├── docs/                          # ✅ Project documentation
+│   ├── development/               # ✅ Development guides
+│   │   ├── implementation_plans/  # ✅ Issue implementation plans
+│   │   ├── project-structure.md   # ✅ This document
+│   │   └── roadmap.md            # Development roadmap
+│   └── github_issues/             # GitHub issue documentation
+```
+
+## ✅ Phase 0 Implementation Status
+
+### Completed Components
+- **CLI Interface**: Working `health` and `start` commands via `dime/__main__.py`
+- **ADK Integration**: FastAPI application using `get_fast_api_app()` utility
+- **Agent System**: Functional research and writing agents with ADK discovery
+- **Configuration**: Simplified case-sensitive environment variable mapping
+- **Code Quality**: All syntax errors fixed, proper ADK patterns implemented
+
+### Key Architecture Decisions
+1. **Simplified Configuration**: Single `DimeSettings` class with uppercase field names matching environment variables exactly
+2. **ADK-First Approach**: Using Google ADK's `get_fast_api_app()` for automatic agent discovery and web interface
+3. **Minimal CLI**: Simple health check and server start commands following the "start with simplest approach" principle
+4. **Standard Project Layout**: Main package at root level, agents in dedicated directory for ADK discovery
+
+### Development Commands
+
+#### Running the Application
+```bash
+# Check system health
+uv run python -m dime health
+
+# Start ADK web interface
+uv run python -m dime start
+
+# Custom host/port
+uv run python -m dime start --host 127.0.0.1 --port 3000
+```
+
+#### Available Interfaces
+- **ADK Web UI**: http://localhost:8000/ (interactive agent conversations)
+- **Developer Tools**: http://localhost:8000/dev-ui/ (ADK debugging interface)
+- **Agent Discovery**: Automatic loading from `agents/` directory
+
+### Configuration System
+- **Environment Variables**: All settings via `.envrc` file with direnv
+- **Case Sensitivity**: `case_sensitive=True` with exact field-to-env-var mapping
+- **Auto-Discovery**: No complex prefixes or Field() mappings - simple and direct
+- **Validation**: Built-in validation with descriptive error messages
+
+### Next Phase Priorities
+1. **Testing Framework**: pytest with ADK-specific testing patterns
+2. **Enhanced Agents**: More sophisticated research and writing tools
+3. **Database Integration**: Full PostgreSQL and Redis integration
+4. **Web Dashboard**: Human approval workflow interface
 │       │   ├── user.py            # User and authentication models
 │       │   └── content.py         # Content and media models
 │       ├── services/              # Business logic services
