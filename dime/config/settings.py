@@ -6,6 +6,7 @@ All settings are loaded from environment variables managed by direnv (.envrc).
 """
 
 import os
+import re
 from typing import Optional, List, Literal, Any
 from pydantic import Field, field_validator, SecretStr, model_validator
 from pydantic.networks import HttpUrl, PostgresDsn, RedisDsn
@@ -376,7 +377,6 @@ class DimeSettings(BaseSettings):
         url = str(self.database.url)
         if hide_password:
             # Simple password masking for logs
-            import re
             url = re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', url)
         return url
 
