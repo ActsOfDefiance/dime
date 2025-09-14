@@ -6,9 +6,9 @@ All settings are loaded from environment variables managed by direnv (.envrc).
 """
 
 import os
-from typing import Optional, List, Literal, Any
+from typing import Optional, List, Literal
 from pydantic import Field, field_validator, SecretStr, model_validator
-from pydantic.networks import HttpUrl, PostgresDsn, RedisDsn
+from pydantic.networks import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
