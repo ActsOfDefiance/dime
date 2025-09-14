@@ -1,0 +1,110 @@
+# Dime Project Environment Configuration
+# Copy this file to .envrc and customize with your values
+# Use: cp .envrc.example .envrc
+
+#==============================================================================
+# Core Application Settings
+#==============================================================================
+export APP_NAME="Dime Content Creation System"
+export APP_VERSION="0.1.0"
+export APP_ENVIRONMENT="development"
+export APP_DEBUG="true"
+export APP_LOG_LEVEL="DEBUG"
+export APP_HOST="0.0.0.0"
+export APP_PORT="8000"
+export APP_ALLOWED_ORIGINS="http://localhost:8000,http://localhost:3000,http://localhost:8080"
+
+#==============================================================================
+# Database Configuration
+#==============================================================================
+export DATABASE_URL="postgresql://dime_user:dime_password@localhost:5432/dime_dev"
+export DATABASE_POOL_SIZE="10"
+export DATABASE_POOL_TIMEOUT="30"
+export DATABASE_ECHO="false"
+
+#==============================================================================
+# Redis Cache Configuration
+#==============================================================================
+export REDIS_URL="redis://localhost:6379/0"
+export REDIS_CACHE_TTL="3600"
+export REDIS_MAX_CONNECTIONS="20"
+
+#==============================================================================
+# Google ADK Configuration
+#==============================================================================
+export GOOGLE_ADK_PROJECT_ID="your-google-project-id"
+export GOOGLE_ADK_LOCATION="us-central1"
+# Get your API key from: https://console.cloud.google.com/
+export GOOGLE_ADK_API_KEY="your-google-api-key"
+
+#==============================================================================
+# Agent Configuration
+#==============================================================================
+export AGENT_NAME="dime_agent"
+export AGENT_MODEL="gemini-2.5-flash"
+export AGENT_MAX_LLM_CALLS="500"
+export AGENT_TIMEOUT_SECONDS="60"
+export AGENT_MAX_RETRIES="3"
+export AGENT_ENABLE_TRACING="false"
+
+#==============================================================================
+# Logfire Configuration
+#==============================================================================
+# Optional: Add your Logfire API token for production logging
+# Get your token from: https://logfire.pydantic.dev/
+# Leave empty for development mode (logs locally only)
+export LOGFIRE_TOKEN=""
+export LOGFIRE_PROJECT_NAME="dime-development"
+export LOGFIRE_ENVIRONMENT="development"
+export LOGFIRE_SERVICE_NAME="dime-app-dev"
+export LOGFIRE_SEND_TO_LOGFIRE="false"
+
+#==============================================================================
+# Authentication Configuration
+#==============================================================================
+export AUTH_GOOGLE_OAUTH_CLIENT_ID="your-google-oauth-client-id"
+export AUTH_GOOGLE_OAUTH_CLIENT_SECRET="your-google-oauth-client-secret"
+export AUTH_JWT_SECRET_KEY="your-super-secret-jwt-key-min-32-chars"
+export AUTH_JWT_ALGORITHM="HS256"
+export AUTH_ACCESS_TOKEN_EXPIRE_MINUTES="1440"
+export AUTH_SESSION_TIMEOUT="86400"
+
+#==============================================================================
+# Storage Configuration
+#==============================================================================
+export STORAGE_BASE_PATH="./storage"
+export STORAGE_RESEARCH_PATH="./storage/research"
+export STORAGE_ARTICLES_PATH="./storage/articles"
+export STORAGE_GRAPHICS_PATH="./storage/graphics"
+export STORAGE_EXPORTS_PATH="./storage/exports"
+export STORAGE_MAX_FILE_SIZE_MB="50"
+
+#==============================================================================
+# Development Tools
+#==============================================================================
+# Ensure UV is in PATH
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Python development settings
+export PYTHONPATH="${PWD}:${PYTHONPATH}"
+
+# Enable Python development mode
+export PYTHONDONTWRITEBYTECODE="1"
+export PYTHONUNBUFFERED="1"
+
+#==============================================================================
+# Direnv Integration
+#==============================================================================
+echo "✅ Dime environment loaded successfully!"
+echo "📁 Project: $(pwd)"
+echo "🐍 Python: $(python --version 2>/dev/null || echo 'Not found')"
+echo "📦 UV: $(uv --version 2>/dev/null || echo 'Not found')"
+echo "🌍 Environment: $APP_ENVIRONMENT"
+echo "🗄️  Database: ${DATABASE_URL%%@*}@***"
+echo "🔥 Logfire: $([ -n "$LOGFIRE_TOKEN" ] && echo "Enabled" || echo "Disabled (dev mode)")"
+echo ""
+echo "💡 Next steps:"
+echo "   uv sync                    # Install dependencies"
+echo "   uv run python -m dime.app  # Start application"
+echo "   uv run pytest             # Run tests"
+echo ""
