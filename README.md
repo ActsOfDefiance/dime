@@ -203,8 +203,8 @@ Manual curation of topics based on historical events, current relevance, and Act
 5. **Open** a Pull Request
 
 ### Code Quality Standards
-- **Formatting**: Black code formatter
-- **Linting**: flake8 with strict rules  
+- **Formatting**: `ruff` code formatter
+- **Linting**: `ruff` linter with strict rules  
 - **Type checking**: mypy with comprehensive coverage
 - **Testing**: 90%+ test coverage required
 - **Documentation**: Comprehensive docstrings and API docs
@@ -218,8 +218,8 @@ uv sync --dev
 uv run pre-commit install
 
 # Run quality checks
-uv run black .
-uv run flake8
+uv run ruff format .
+uv run ruff check .
 uv run mypy dime/
 
 # Run tests

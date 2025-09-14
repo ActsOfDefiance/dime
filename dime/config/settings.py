@@ -9,7 +9,7 @@ import os
 import re
 from typing import Optional, List, Literal, Any
 from pydantic import Field, field_validator, SecretStr, model_validator
-from pydantic.networks import HttpUrl, PostgresDsn, RedisDsn
+from pydantic.networks import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
