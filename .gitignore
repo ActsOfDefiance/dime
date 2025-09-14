@@ -175,3 +175,6 @@ cython_debug/
 
 # Project-specific
 docs/github_issues/
+
+# Claude Code configuration
+.claude/agents/
