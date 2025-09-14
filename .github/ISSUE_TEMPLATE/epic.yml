@@ -1,0 +1,102 @@
+name: Epic
+description: Large feature or initiative spanning multiple issues
+title: '[EPIC] Brief description of the epic'
+labels: ['✨ feature']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Epic template for large features or initiatives spanning multiple issues
+
+  - type: textarea
+    id: epic-overview
+    attributes:
+      label: Epic Overview
+      description: High-level description of this epic and its goals.
+      placeholder: What is this epic about?
+    validations:
+      required: true
+
+  - type: textarea
+    id: business-value
+    attributes:
+      label: Business Value
+      description: Why is this epic important? What value does it provide?
+      placeholder: Why is this important?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: success-criteria
+    attributes:
+      label: Success Criteria
+      description: Measurable outcomes that define success
+      options:
+        - label: Measurable outcome 1
+          required: false
+        - label: Measurable outcome 2
+          required: false
+        - label: Measurable outcome 3
+          required: false
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: List of user stories that make up this epic
+      placeholder: |
+        - [ ] #[issue-number] - User story title
+        - [ ] #[issue-number] - User story title
+        - [ ] #[issue-number] - User story title
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-requirements
+    attributes:
+      label: Technical Requirements
+      description: High-level technical requirements and constraints.
+      placeholder: What are the technical requirements?
+
+  - type: checkboxes
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What needs to be completed first?
+      options:
+        - label: Dependency 1
+          required: false
+        - label: Dependency 2
+          required: false
+
+  - type: checkboxes
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description: What needs to be true for this epic to be considered complete?
+      options:
+        - label: All user stories completed
+          required: false
+        - label: Documentation updated
+          required: false
+        - label: Tests written and passing
+          required: false
+        - label: Code reviewed and merged
+          required: false
+        - label: Feature deployed to production
+          required: false
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: Expected start and completion dates.
+      placeholder: When should this be started and completed?
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources
+      description: Team members, budget, or other resources required.
+      placeholder: What resources are needed?

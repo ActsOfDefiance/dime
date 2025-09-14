@@ -172,3 +172,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Project-specific
+docs/github_issues/
+
+# Environment files with secrets
+.envrc
+
+# Claude Code configuration
+.claude/agents/
