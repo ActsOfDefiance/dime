@@ -80,12 +80,26 @@ uv run python -m dime start --host 127.0.0.1 --port 3000
 - **Validation**: Built-in validation with descriptive error messages
 
 ### Next Phase Priorities
-1. **Testing Framework**: pytest with ADK-specific testing patterns
-2. **Enhanced Agents**: More sophisticated research and writing tools
-3. **Database Integration**: Full PostgreSQL and Redis integration
-4. **Web Dashboard**: Human approval workflow interface
-│       │   ├── user.py            # User and authentication models
-│       │   └── content.py         # Content and media models
+1. **Enhanced Agents**: More sophisticated research and writing tools
+2. **Database Integration**: Full PostgreSQL and Redis integration
+3. **Web Dashboard**: Human approval workflow interface
+4. **Production Readiness**: Monitoring, observability, deployment
+
+---
+
+## 📋 Future Planned Structure (Phase 1+)
+
+**Note**: The following directory structure represents the planned architecture for future phases. None of these components are currently implemented. This serves as a design reference for future development.
+
+### Planned Application Structure
+```
+dime/
+├── dime/                          # Main package expansion (planned)
+│   ├── models/                    # Database models (planned)
+│   │   ├── __init__.py
+│   │   ├── article.py             # Article and content models
+│   │   ├── user.py                # User and authentication models
+│   │   └── content.py         # Content and media models
 │       ├── services/              # Business logic services
 │       │   ├── __init__.py
 │       │   ├── article_service.py # Article workflow orchestration
@@ -198,50 +212,58 @@ uv run python -m dime start --host 127.0.0.1 --port 3000
 
 ## Module Dependencies
 
-### Core Dependencies (pyproject.toml)
+### Phase 0: Actual Dependencies (pyproject.toml)
 ```toml
 [project]
 name = "dime"
 version = "0.1.0"
-description = "AI-powered content creation system for Acts of Defiance"
+description = "AI-powered multi-agent content creation system for political liberation movement analysis"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
-    "sqlalchemy>=2.0.0",
-    "alembic>=1.12.0",
-    "psycopg2-binary>=2.9.7",
-    "redis>=5.0.0",
-    "google-adk>=1.9.0",
-    "authlib>=1.2.0",
-    "python-multipart>=0.0.6",
-    "jinja2>=3.1.0",
-    "pydantic>=2.5.0",
-    "logfire[fastapi,sqlalchemy]>=0.20.0",
-    "python-dotenv>=1.0.0",
-    "click>=8.1.0",
-    "httpx>=0.25.0",
+    "google-adk>=1.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
+    "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
-    "ruff>=0.1.0",
-    "pyright>=1.1.0",
-    "pre-commit>=3.4.0",
-    "playwright>=1.39.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
 ]
 
-[project.scripts]
-dime = "dime.cli.main:cli"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--cov=dime --cov=agents --cov-report=term-missing --cov-report=html"
 ```
+
+### Planned Dependencies (Phase 1+)
+The following dependencies will be added in future phases:
+- **Database**: `sqlalchemy>=2.0.0`, `alembic>=1.12.0`, `psycopg2-binary>=2.9.7`
+- **Caching**: `redis>=5.0.0`
+- **Web Framework**: `fastapi>=0.104.0`, `uvicorn>=0.24.0` (currently using ADK's built-in FastAPI)
+- **Authentication**: `authlib>=1.2.0`, `python-multipart>=0.0.6`
+- **Monitoring**: `logfire[fastapi,sqlalchemy]>=0.20.0`
+- **CLI**: `click>=8.1.0` (currently using argparse)
+- **Testing**: `playwright>=1.39.0` (E2E tests), `pyright>=1.1.0` (type checking)
 
 ## Configuration Management
 
-### Environment Variables (.env)
+### Phase 0: Current Configuration
+**Implementation**: Simplified Pydantic Settings with case-sensitive environment variable mapping
+- All fields in `DimeSettings` map directly to uppercase environment variables
+- Example: `DATABASE_URL` field → `DATABASE_URL` environment variable
+- No complex prefixes, no Field() mappings for most fields
+- Validation with descriptive error messages
+
+**Configuration File**: `dime/config/settings.py`
+- Single `DimeSettings` class with all configuration
+- Case-sensitive field names matching environment variables exactly
+- Automatic environment variable discovery via direnv (`.envrc`)
+
+### Planned Environment Variables (Phase 1+)
 ```bash
 # Database Configuration
 DATABASE_URL=postgresql://dime:password@localhost:5432/dime_dev
@@ -286,9 +308,11 @@ GRAPHICS_PATH=./storage/graphics
 RESEARCH_PATH=./storage/research
 ```
 
-### Agent Configuration Files
+### Planned Agent Configuration Files (Phase 1+)
 
-#### agents/fact_checker.yml
+**Note**: These configuration files do not currently exist. Agent configuration is currently embedded in Python code.
+
+#### agents/fact_checker.yml (Planned)
 ```yaml
 name: "fact_checker"
 model: "gemini-2.5-pro"
@@ -318,51 +342,64 @@ quality_threshold: 5.0
 
 ## Development Workflow
 
-### Local Development Setup
+### Phase 0: Current Development Setup
 ```bash
 # 1. Clone repository
 git clone https://github.com/ActsOfDefiance/dime.git
 cd dime
 
 # 2. Set up Python environment
-uv sync --dev
+uv sync
 
-# 3. Copy environment configuration
-cp .env.example .env
-# Edit .env with your configuration
+# 3. Configure environment variables
+# Create .envrc with required variables (see Configuration Management section)
+# Load environment
+direnv allow  # or: source .envrc
 
-# 4. Start development services
-docker-compose up -d postgres redis
+# 4. Health check
+uv run python -m dime health
 
-# 5. Initialize database
-uv run alembic upgrade head
-
-# 6. Run application
-uv run uvicorn dime.main:app --reload --host 0.0.0.0 --port 8000
+# 5. Start ADK web interface
+uv run python -m dime start
 ```
 
-### Development Commands
+### Phase 0: Current Commands
 ```bash
-# Application management
-uv run python -m dime.main                    # Start FastAPI server
-uv run python -m dime.cli --help             # CLI help
+# Application commands
+uv run python -m dime health                 # System health check
+uv run python -m dime start                  # Start web server (default host/port)
+uv run python -m dime start --host 127.0.0.1 --port 3000  # Custom host/port
 
-# Database operations
-uv run alembic revision --autogenerate -m "description"  # Create migration
-uv run alembic upgrade head                   # Apply migrations
-uv run alembic downgrade -1                   # Rollback last migration
-
-# Testing
-uv run pytest                                 # Run all tests
-uv run pytest tests/unit/                     # Run unit tests only
-uv run pytest --cov=dime                      # Run with coverage
-uv run playwright install                     # Install E2E test browsers
+# Testing commands
+uv run pytest                                # Run all tests
+uv run pytest -v                            # Verbose output
+uv run pytest --cov                         # With coverage
+uv run pytest tests/test_config.py          # Specific test file
+uv run pytest --cov --cov-report=html       # HTML coverage report
 
 # Code quality
-uv run ruff format .                          # Format code
-uv run ruff check .                           # Lint code
-uv run pyright                                # Type checking
-uv run pre-commit run --all-files            # Run all quality checks
+uv run ruff format .                         # Format code
+uv run ruff check .                          # Lint code
+uv run ruff check --fix .                   # Auto-fix linting issues
+```
+
+### Planned Commands (Phase 1+)
+The following commands will be added in future phases:
+```bash
+# Database operations (planned)
+uv run alembic revision --autogenerate -m "description"  # Create migration
+uv run alembic upgrade head                   # Apply migrations
+uv run alembic downgrade -1                   # Rollback migration
+
+# Advanced testing (planned)
+uv run pytest tests/unit/                    # Unit tests only
+uv run pytest tests/integration/             # Integration tests
+uv run playwright install                    # E2E test browsers
+uv run pyright                               # Type checking
+
+# Enhanced CLI (planned)
+uv run python -m dime articles create        # Article management
+uv run python -m dime agents list            # Agent management
 ```
 
 ### Git Workflow
@@ -380,9 +417,11 @@ git push origin feature/agent-improvements
 # 4. Merge to main after approval
 ```
 
-## Architecture Patterns
+## Planned Architecture Patterns (Phase 1+)
 
-### Agent Pattern
+**Note**: These design patterns are planned for future implementation. Current implementation uses simpler direct agent instantiation.
+
+### Planned Agent Pattern
 ```python
 # Base agent interface
 class BaseAgent(ABC):
@@ -438,7 +477,16 @@ class ArticleRepository:
 
 ## Testing Strategy
 
-### Test Categories
+### Phase 0: Current Testing
+- **Unit Tests**: 20 tests covering configuration, CLI, app, and agents
+- **Test Coverage**: 93% for Phase 0 features
+- **Framework**: pytest with pytest-cov
+- **Test Locations**: `tests/` directory with conftest.py for fixtures
+- **Performance**: Test suite completes in ~2.3 seconds
+
+### Planned Test Expansion (Phase 1+)
+
+**Test Categories**
 - **Unit Tests**: Individual component testing
 - **Integration Tests**: Service interaction testing  
 - **E2E Tests**: Complete workflow testing
@@ -467,9 +515,11 @@ async def test_article_workflow():
     assert result.final_content is not None
 ```
 
-## Deployment Configuration
+## Planned Deployment Configuration (Phase 1+)
 
-### Docker Compose (Local Development)
+**Note**: Deployment infrastructure is not currently implemented. The application runs locally using `uv run python -m dime start`.
+
+### Docker Compose (Planned)
 ```yaml
 version: '3.8'
 services:
