@@ -217,7 +217,7 @@ dime/
 [project]
 name = "dime"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI-powered multi-agent content creation system for political liberation movement analysis"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
