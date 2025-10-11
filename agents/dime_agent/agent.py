@@ -48,6 +48,5 @@ writer_agent = LlmAgent(
 root_agent = SequentialAgent(
     name="dime_agent",
     description="Content creation system for political liberation movement articles",
-    instruction="Coordinate research and writing for high-quality political content.",
     sub_agents=[researcher_agent, writer_agent],
 )
