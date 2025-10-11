@@ -196,3 +196,4 @@ Every commit must:
 - **Quality Standards**: Emphasis on source citation and accuracy for historical content
 - Never use inline imports. Imports always go in the header in accordance with PEP8
 - always start with the simplest approach possible
+- end all files with a single newline character in accordance with PEP8

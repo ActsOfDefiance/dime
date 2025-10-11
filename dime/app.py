@@ -27,8 +27,7 @@ def create_app() -> FastAPI:
 
     # Use ADK's official FastAPI factory with required parameters
     app: FastAPI = get_fast_api_app(
-        agent_dir=os.path.join(os.path.dirname(__file__), "..", "agents"),
-        web=True
+        agent_dir=os.path.join(os.path.dirname(__file__), "..", "agents"), web=True
     )
 
     # Configure app metadata

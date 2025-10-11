@@ -7,7 +7,7 @@ All settings are loaded from environment variables managed by direnv (.envrc).
 
 import os
 import re
-from typing import Optional, List, Literal, Annotated
+from typing import Optional, List, Literal, Annotated, Union
 from pydantic import Field, field_validator, SecretStr, model_validator
 from pydantic.networks import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
@@ -24,10 +24,7 @@ class DimeSettings(BaseSettings):
     etc.
     """
 
-    model_config = SettingsConfigDict(
-        case_sensitive=True,
-        env_nested_delimiter="__"
-    )
+    model_config = SettingsConfigDict(case_sensitive=True, env_nested_delimiter="__")
 
     # ==========================================================================
     # Database Configuration
@@ -73,7 +70,10 @@ class DimeSettings(BaseSettings):
     @model_validator(mode="after")
     def validate_send_to_logfire(self):
         """Disable Logfire if no token provided."""
-        if self.LOGFIRE_TOKEN is None or (isinstance(self.LOGFIRE_TOKEN, SecretStr) and not self.LOGFIRE_TOKEN.get_secret_value().strip()):
+        if self.LOGFIRE_TOKEN is None or (
+            isinstance(self.LOGFIRE_TOKEN, SecretStr)
+            and not self.LOGFIRE_TOKEN.get_secret_value().strip()
+        ):
             self.LOGFIRE_SEND_TO_LOGFIRE = False
         return self
 
@@ -103,16 +103,18 @@ class DimeSettings(BaseSettings):
         default=["http://localhost:8000", "http://localhost:3000"]
     )
 
-    @field_validator('APP_ALLOWED_ORIGINS', mode='before')
+    @field_validator("APP_ALLOWED_ORIGINS", mode="before")
     @classmethod
-    def parse_allowed_origins(cls, v) -> List[str]:
+    def parse_allowed_origins(cls, v: Union[str, List[str]]) -> List[str]:
         """Parse allowed origins from comma-separated string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         elif isinstance(v, list):
             return v
         else:
-            raise ValueError(f"APP_ALLOWED_ORIGINS must be a string or list, got {type(v)}")
+            raise ValueError(
+                f"APP_ALLOWED_ORIGINS must be a string or list, got {type(v)}"
+            )
 
     @model_validator(mode="after")
     def set_debug_for_development(self):
@@ -149,19 +151,32 @@ class DimeSettings(BaseSettings):
         if not self.GOOGLE_ADK_PROJECT_ID:
             errors.append("GOOGLE_ADK_PROJECT_ID is required")
 
-        if not self.GOOGLE_ADK_API_KEY or not self.GOOGLE_ADK_API_KEY.get_secret_value().strip():
+        if (
+            not self.GOOGLE_ADK_API_KEY
+            or not self.GOOGLE_ADK_API_KEY.get_secret_value().strip()
+        ):
             errors.append("GOOGLE_ADK_API_KEY is required")
 
         # Check auth secrets in production
         if self.APP_ENVIRONMENT == "production":
-            if not self.AUTH_JWT_SECRET_KEY or not self.AUTH_JWT_SECRET_KEY.get_secret_value().strip():
+            if (
+                not self.AUTH_JWT_SECRET_KEY
+                or not self.AUTH_JWT_SECRET_KEY.get_secret_value().strip()
+            ):
                 errors.append("AUTH_JWT_SECRET_KEY is required in production")
 
-            if not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET or not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value().strip():
-                errors.append("AUTH_GOOGLE_OAUTH_CLIENT_SECRET is required in production")
+            if (
+                not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET
+                or not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value().strip()
+            ):
+                errors.append(
+                    "AUTH_GOOGLE_OAUTH_CLIENT_SECRET is required in production"
+                )
 
         if errors:
-            error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {error}" for error in errors)
+            error_msg = "Configuration validation failed:\n" + "\n".join(
+                f"  - {error}" for error in errors
+            )
             raise ValueError(error_msg)
 
     def _ensure_storage_directories(self) -> None:
@@ -195,7 +210,7 @@ class DimeSettings(BaseSettings):
         url = str(self.DATABASE_URL)
         if hide_password:
             # Simple password masking for logs
-            url = re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', url)
+            url = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
         return url
 
     def get_logfire_token(self) -> Optional[str]:

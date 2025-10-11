@@ -16,8 +16,13 @@ def main():
     parser = argparse.ArgumentParser(description="Dime Content Creation System")
     parser.add_argument("--host", default=None, help="Host to bind to")
     parser.add_argument("--port", type=int, default=None, help="Port to bind to")
-    parser.add_argument("command", nargs="?", default="start",
-                       choices=["start", "health"], help="Command to run")
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="start",
+        choices=["start", "health"],
+        help="Command to run",
+    )
 
     args = parser.parse_args()
     settings = get_settings()
@@ -33,9 +38,7 @@ def main():
     # Start FastAPI server
     app = create_app()
     uvicorn.run(
-        app,
-        host=args.host or settings.APP_HOST,
-        port=args.port or settings.APP_PORT
+        app, host=args.host or settings.APP_HOST, port=args.port or settings.APP_PORT
     )
 
 

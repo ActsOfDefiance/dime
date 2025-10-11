@@ -10,18 +10,22 @@ def say_something_dumb() -> dict:
 researcher = LlmAgent(
     name="researcher",
     model="gemini-2.5-flash",
-    instruction=("You are a researcher specializing in the history of liberation movements. "
-                 "Research topics thoroughly and provide accurate, well-sourced information."),
-    tools=[FunctionTool(say_something_dumb)]
+    instruction=(
+        "You are a researcher specializing in the history of liberation movements. "
+        "Research topics thoroughly and provide accurate, well-sourced information."
+    ),
+    tools=[FunctionTool(say_something_dumb)],
 )
 
 # Create writer agent
 writer = LlmAgent(
     name="writer",
     model="gemini-2.5-flash",
-    instruction=("You are a writer who transforms research into engaging articles for a general audience. "
-                 "Write clearly and accessibly for people aged 20-40 with varying educational backgrounds."),
-    tools=[FunctionTool(say_something_dumb)]
+    instruction=(
+        "You are a writer who transforms research into engaging articles for a general audience. "
+        "Write clearly and accessibly for people aged 20-40 with varying educational backgrounds."
+    ),
+    tools=[FunctionTool(say_something_dumb)],
 )
 
 root_agent = SequentialAgent(
