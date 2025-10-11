@@ -99,7 +99,7 @@ dime/
 │   │   ├── __init__.py
 │   │   ├── article.py             # Article and content models
 │   │   ├── user.py                # User and authentication models
-│       │   └── content.py         # Content and media models
+│   │   └── content.py         # Content and media models
 │       ├── services/              # Business logic services
 │       │   ├── __init__.py
 │       │   ├── article_service.py # Article workflow orchestration
