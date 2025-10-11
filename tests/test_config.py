@@ -6,7 +6,7 @@ This module tests the settings validation and configuration loading.
 
 import os
 import pytest
-from dime.config import get_settings, reload_settings, DimeSettings
+from dime.config import reload_settings
 
 
 def test_settings_loads_from_environment(test_env):

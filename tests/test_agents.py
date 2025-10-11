@@ -4,7 +4,6 @@ Tests for agent functionality.
 This module tests the ADK agent implementation and tools.
 """
 
-import pytest
 from agents.dime_agent.agent import (
     research_topic,
     write_content,
@@ -53,7 +52,10 @@ def test_writer_agent_exists():
 def test_root_agent_configuration():
     """Test that root agent is properly configured."""
     assert root_agent.name == "dime_agent"
-    assert root_agent.description == "Content creation system for political liberation movement articles"
+    assert (
+        root_agent.description
+        == "Content creation system for political liberation movement articles"
+    )
     assert len(root_agent.sub_agents) == 2
     assert researcher_agent in root_agent.sub_agents
     assert writer_agent in root_agent.sub_agents

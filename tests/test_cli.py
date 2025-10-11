@@ -5,9 +5,7 @@ This module tests the command-line interface commands.
 """
 
 import sys
-from io import StringIO
-from unittest.mock import patch, MagicMock
-import pytest
+from unittest.mock import patch
 from dime.__main__ import main
 
 
@@ -48,7 +46,9 @@ def test_start_command_with_defaults(mock_uvicorn, test_env):
 @patch("dime.__main__.uvicorn.run")
 def test_start_command_with_custom_host_port(mock_uvicorn, test_env):
     """Test start command with custom host and port."""
-    with patch.object(sys, "argv", ["dime", "start", "--host", "127.0.0.1", "--port", "3000"]):
+    with patch.object(
+        sys, "argv", ["dime", "start", "--host", "127.0.0.1", "--port", "3000"]
+    ):
         main()
 
     mock_uvicorn.assert_called_once()

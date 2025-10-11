@@ -4,7 +4,6 @@ Tests for FastAPI application.
 This module tests the FastAPI application creation and configuration.
 """
 
-import pytest
 from fastapi import FastAPI
 from dime.app import create_app
 
