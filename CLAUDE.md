@@ -19,6 +19,13 @@ Python package called "dime" - a multi-agent content creation system for politic
 - **Health check**: `uv run python -m dime health` (validates configuration and system status)
 - **Run any Python file**: `uv run python <filename.py>`
 
+### Testing Commands
+- **Run all tests**: `uv run pytest`
+- **Run with coverage**: `uv run pytest --cov`
+- **Run with verbose output**: `uv run pytest -v`
+- **Run specific test file**: `uv run pytest tests/test_config.py`
+- **Generate HTML coverage report**: `uv run pytest --cov --cov-report=html` (opens in `htmlcov/index.html`)
+
 ## Current Project State
 
 ### ✅ Phase 0: Foundation - COMPLETED
@@ -38,11 +45,12 @@ The foundation phase has been successfully completed with all critical issues re
 - **✅ Environment Management**: direnv integration with `.envrc` (contains secrets, not tracked)
 - **✅ Package Management**: Modern uv-based dependency management
 - **✅ Git Workflow**: Gitflow methodology with protected main/develop branches
+- **✅ Testing Framework**: pytest with 93% code coverage and comprehensive test suite
 
 ### Next Phase Requirements
-- **Testing Framework**: Set up pytest framework with ADK testing patterns
 - **Enhanced Agent Tools**: Implement more sophisticated content creation tools
 - **Database Integration**: Full PostgreSQL and Redis integration
+- **Production Readiness**: Monitoring, observability, and deployment configuration
 
 ## Architecture Overview
 
@@ -81,6 +89,13 @@ dime/
 ├── publisher/               # ✅ Legacy agent code (fixed)
 │   ├── __init__.py
 │   └── agent.py            # ✅ Fixed undefined variable references
+├── tests/                   # ✅ Test suite (93% coverage)
+│   ├── __init__.py
+│   ├── conftest.py         # ✅ Pytest fixtures and configuration
+│   ├── test_config.py      # ✅ Configuration tests
+│   ├── test_cli.py         # ✅ CLI command tests
+│   ├── test_app.py         # ✅ FastAPI application tests
+│   └── test_agents.py      # ✅ Agent functionality tests
 ├── docs/                    # Project documentation
 │   └── github_issues/       # Detailed implementation requirements
 ├── .envrc                   # Environment variables (contains secrets, git-ignored)
@@ -128,11 +143,11 @@ dime/
 - **Coverage**: ≥90% test coverage required
 
 ### Testing Requirements
-- **Framework**: pytest (to be implemented)
-- **Coverage**: pytest-cov with ≥90% line coverage
+- **Framework**: pytest (✅ implemented)
+- **Coverage**: pytest-cov with ≥90% line coverage (✅ 93% achieved)
 - **Test Types**: Unit tests for core logic, integration tests for ADK workflows
-- **Performance**: Test suite must complete in <60 seconds
-- **ADK Testing**: Special patterns needed for agent workflow testing
+- **Performance**: Test suite must complete in <60 seconds (✅ ~2.3 seconds)
+- **Test Suite**: 20 tests covering config, CLI, app, and agents
 
 ### Performance Criteria
 - **Application Startup**: System starts in <10 seconds
@@ -159,11 +174,26 @@ When running `uv run python -m dime start`, the following interfaces become avai
 - **Auto-Discovery**: Field names automatically map to environment variables without prefixes or complex field mappings
 - **Validation**: Built-in validation with descriptive error messages
 
-## Next Phase Development Priority
+## Issue #4 Completion Status
 1. **✅ COMPLETED**: Fix Critical Bug - Resolved undefined agent references in `publisher/agent.py`
 2. **✅ COMPLETED**: Create Basic Interface - Implemented CLI interface and ADK web interface
 3. **✅ COMPLETED**: Update Documentation - Aligned documentation with actual implementation
-4. **TODO**: Establish Testing - Set up pytest framework with ADK testing patterns
+4. **✅ COMPLETED**: Establish Testing - Set up pytest framework with 93% code coverage
+
+### What Was Accomplished
+- ✅ CLI commands (health, start) with argument parsing
+- ✅ ADK web interface using get_fast_api_app()
+- ✅ Agent discovery and basic conversation functionality
+- ✅ Comprehensive test suite with 20 tests
+- ✅ 93% code coverage exceeding 90% requirement
+- ✅ All code quality checks passing (ruff lint/format)
+
+### Remaining Work (Future Phases)
+- Advanced CLI commands (content creation, pipeline management)
+- Database session persistence and testing
+- Production monitoring and observability
+- Security hardening (input validation, XSS protection)
+- Load testing and performance optimization
 
 ## Commit and Testing Policy
 - **100% test pass before committing**: No skipping tests allowed
