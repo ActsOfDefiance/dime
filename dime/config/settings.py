@@ -7,205 +7,131 @@ All settings are loaded from environment variables managed by direnv (.envrc).
 
 import os
 import re
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Annotated, Union
 from pydantic import Field, field_validator, SecretStr, model_validator
 from pydantic.networks import PostgresDsn, RedisDsn
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class DatabaseSettings(BaseSettings):
-    """Database configuration settings."""
-
-    model_config = SettingsConfigDict(env_prefix="DATABASE_", case_sensitive=False)
-
-    url: PostgresDsn = Field(..., description="PostgreSQL database URL")
-    pool_size: int = Field(default=10, description="Database connection pool size")
-    pool_timeout: int = Field(
-        default=30, description="Database connection timeout in seconds"
-    )
-    echo: bool = Field(default=False, description="Enable SQLAlchemy query logging")
-
-
-class RedisSettings(BaseSettings):
-    """Redis cache configuration settings."""
-
-    model_config = SettingsConfigDict(env_prefix="REDIS_", case_sensitive=False)
-
-    url: RedisDsn = Field(
-        default="redis://localhost:6379/0", description="Redis connection URL"
-    )
-    cache_ttl: int = Field(default=3600, description="Default cache TTL in seconds")
-    max_connections: int = Field(default=20, description="Maximum Redis connections")
-
-
-class GoogleADKSettings(BaseSettings):
-    """Google ADK configuration settings."""
-
-    model_config = SettingsConfigDict(env_prefix="GOOGLE_ADK_", case_sensitive=False)
-
-    project_id: str = Field(..., description="Google Cloud project ID")
-    location: str = Field(default="us-central1", description="Google Cloud region")
-    api_key: SecretStr = Field(..., description="Google API key for ADK")
-
-
-class AgentSettings(BaseSettings):
-    """ADK Agent configuration settings."""
-
-    model_config = SettingsConfigDict(env_prefix="AGENT_", case_sensitive=False)
-
-    name: str = Field(default="dime_agent", description="Primary agent name")
-    model: str = Field(default="gemini-2.5-flash", description="Default LLM model")
-    max_llm_calls: int = Field(default=500, description="Maximum LLM calls per session")
-    timeout_seconds: int = Field(default=60, description="Agent operation timeout")
-    max_retries: int = Field(default=3, description="Maximum retry attempts")
-    enable_tracing: bool = Field(default=False, description="Enable agent tracing")
-
-
-class LogfireSettings(BaseSettings):
-    """Logfire logging and observability settings."""
-
-    model_config = SettingsConfigDict(env_prefix="LOGFIRE_", case_sensitive=False)
-
-    token: Optional[SecretStr] = Field(
-        default=None, description="Logfire API token (optional for development)"
-    )
-    project_name: str = Field(default="dime", description="Logfire project name")
-    environment: str = Field(
-        default="development",
-        description="Environment name (development, staging, production)",
-    )
-    service_name: str = Field(
-        default="dime-app", description="Service name for logging"
-    )
-    send_to_logfire: bool = Field(
-        default=True, description="Enable sending logs to Logfire"
-    )
-
-    @model_validator(mode="after")
-    def validate_send_to_logfire(self):
-        """Disable Logfire if no token provided."""
-        if self.token is None or (
-            isinstance(self.token, SecretStr)
-            and not self.token.get_secret_value().strip()
-        ):
-            self.send_to_logfire = False
-        return self
-
-
-class AuthSettings(BaseSettings):
-    """Authentication and authorization settings."""
-
-    model_config = SettingsConfigDict(env_prefix="AUTH_", case_sensitive=False)
-
-    google_oauth_client_id: str = Field(..., description="Google OAuth client ID")
-    google_oauth_client_secret: SecretStr = Field(
-        ..., description="Google OAuth client secret"
-    )
-    jwt_secret_key: SecretStr = Field(..., description="JWT signing secret key")
-    jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm")
-    access_token_expire_minutes: int = Field(
-        default=1440,  # 24 hours
-        description="Access token expiration time in minutes",
-    )
-    session_timeout: int = Field(
-        default=86400,  # 24 hours
-        description="Session timeout in seconds",
-    )
-
-
-class ApplicationSettings(BaseSettings):
-    """Core application settings."""
-
-    model_config = SettingsConfigDict(env_prefix="APP_", case_sensitive=False)
-
-    name: str = Field(
-        default="Dime Content Creation System", description="Application name"
-    )
-    version: str = Field(default="0.1.0", description="Application version")
-    environment: Literal["development", "staging", "production"] = Field(
-        default="development", description="Runtime environment"
-    )
-    debug: bool = Field(default=False, description="Enable debug mode")
-    log_level: str = Field(default="INFO", description="Logging level")
-    host: str = Field(default="0.0.0.0", description="Application host")
-    port: int = Field(default=8000, description="Application port")
-    allowed_origins: List[str] = Field(
-        default=["http://localhost:8000", "http://localhost:3000"],
-        description="CORS allowed origins",
-    )
-
-    @field_validator("allowed_origins", mode="before")
-    @classmethod
-    def parse_allowed_origins(cls, v):
-        """Parse comma-separated origins string."""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
-
-    @model_validator(mode="after")
-    def set_debug_for_development(self):
-        """Auto-enable debug in development environment."""
-        if self.environment == "development":
-            self.debug = True
-        return self
-
-
-class StorageSettings(BaseSettings):
-    """File storage configuration settings."""
-
-    model_config = SettingsConfigDict(env_prefix="STORAGE_", case_sensitive=False)
-
-    base_path: str = Field(
-        default="./storage", description="Base storage directory path"
-    )
-    research_path: str = Field(
-        default="./storage/research", description="Research documents storage path"
-    )
-    articles_path: str = Field(
-        default="./storage/articles", description="Generated articles storage path"
-    )
-    graphics_path: str = Field(
-        default="./storage/graphics", description="Generated graphics storage path"
-    )
-    exports_path: str = Field(
-        default="./storage/exports", description="Final exports storage path"
-    )
-    max_file_size_mb: int = Field(default=50, description="Maximum file size in MB")
+from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
 
 
 class DimeSettings(BaseSettings):
     """
     Main application settings container.
 
-    This class combines all configuration sections and provides the main
-    settings interface for the Dime application.
+    Uses automatic field-to-environment-variable mapping:
+    - database_url → DATABASE_URL
+    - google_adk_project_id → GOOGLE_ADK_PROJECT_ID
+    - app_allowed_origins → APP_ALLOWED_ORIGINS
+    etc.
     """
 
-    model_config = SettingsConfigDict(case_sensitive=False, env_nested_delimiter="__")
+    model_config = SettingsConfigDict(case_sensitive=True, env_nested_delimiter="__")
 
-    # Core application settings
-    app: ApplicationSettings = Field(default_factory=ApplicationSettings)
+    # ==========================================================================
+    # Database Configuration
+    # ==========================================================================
+    DATABASE_URL: PostgresDsn
+    DATABASE_POOL_SIZE: int = 10
+    DATABASE_POOL_TIMEOUT: int = 30
+    DATABASE_ECHO: bool = False
 
-    # Database settings
-    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    # ==========================================================================
+    # Redis Cache Configuration
+    # ==========================================================================
+    REDIS_URL: RedisDsn = "redis://localhost:6379/0"
+    REDIS_CACHE_TTL: int = 3600
+    REDIS_MAX_CONNECTIONS: int = 20
 
-    # Redis cache settings
-    redis: RedisSettings = Field(default_factory=RedisSettings)
+    # ==========================================================================
+    # Google ADK Configuration
+    # ==========================================================================
+    GOOGLE_ADK_PROJECT_ID: str
+    GOOGLE_ADK_LOCATION: str = "us-central1"
+    GOOGLE_ADK_API_KEY: SecretStr
 
-    # Google ADK settings
-    google_adk: GoogleADKSettings = Field(default_factory=GoogleADKSettings)
+    # ==========================================================================
+    # Agent Configuration
+    # ==========================================================================
+    AGENT_NAME: str = "dime_agent"
+    AGENT_MODEL: str = "gemini-2.5-flash"
+    AGENT_MAX_LLM_CALLS: int = 500
+    AGENT_TIMEOUT_SECONDS: int = 60
+    AGENT_MAX_RETRIES: int = 3
+    AGENT_ENABLE_TRACING: bool = False
 
-    # Agent settings
-    agent: AgentSettings = Field(default_factory=AgentSettings)
+    # ==========================================================================
+    # Logfire Configuration
+    # ==========================================================================
+    LOGFIRE_TOKEN: Optional[SecretStr] = None
+    LOGFIRE_PROJECT_NAME: str = "dime"
+    LOGFIRE_ENVIRONMENT: str = "development"
+    LOGFIRE_SERVICE_NAME: str = "dime-app"
+    LOGFIRE_SEND_TO_LOGFIRE: bool = True
 
-    # Logfire settings
-    logfire: LogfireSettings = Field(default_factory=LogfireSettings)
+    @model_validator(mode="after")
+    def validate_send_to_logfire(self):
+        """Disable Logfire if no token provided."""
+        if self.LOGFIRE_TOKEN is None or (
+            isinstance(self.LOGFIRE_TOKEN, SecretStr)
+            and not self.LOGFIRE_TOKEN.get_secret_value().strip()
+        ):
+            self.LOGFIRE_SEND_TO_LOGFIRE = False
+        return self
 
-    # Authentication settings
-    auth: AuthSettings = Field(default_factory=AuthSettings)
+    # ==========================================================================
+    # Authentication Configuration
+    # ==========================================================================
+    AUTH_GOOGLE_OAUTH_CLIENT_ID: str
+    AUTH_GOOGLE_OAUTH_CLIENT_SECRET: SecretStr
+    AUTH_JWT_SECRET_KEY: SecretStr
+    AUTH_JWT_ALGORITHM: str = "HS256"
+    AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    AUTH_SESSION_TIMEOUT: int = 86400  # 24 hours
 
-    # Storage settings
-    storage: StorageSettings = Field(default_factory=StorageSettings)
+    # ==========================================================================
+    # Application Configuration
+    # ==========================================================================
+    APP_NAME: str = "Dime Content Creation System"
+    APP_VERSION: str = "0.1.0"
+    APP_ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    APP_DEBUG: bool = False
+    APP_LOG_LEVEL: str = "INFO"
+    APP_HOST: str = "0.0.0.0"
+    APP_PORT: int = 8000
+
+    # Only use Field() where we need special handling
+    APP_ALLOWED_ORIGINS: Annotated[List[str], NoDecode] = Field(
+        default=["http://localhost:8000", "http://localhost:3000"]
+    )
+
+    @field_validator("APP_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        """Parse allowed origins from comma-separated string or list."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        elif isinstance(v, list):
+            return v
+        else:
+            raise ValueError(
+                f"APP_ALLOWED_ORIGINS must be a string or list, got {type(v)}"
+            )
+
+    @model_validator(mode="after")
+    def set_debug_for_development(self):
+        """Auto-enable debug in development environment."""
+        if self.APP_ENVIRONMENT == "development":
+            self.APP_DEBUG = True
+        return self
+
+    # ==========================================================================
+    # Storage Configuration
+    # ==========================================================================
+    STORAGE_BASE_PATH: str = "./storage"
+    STORAGE_RESEARCH_PATH: str = "./storage/research"
+    STORAGE_ARTICLES_PATH: str = "./storage/articles"
+    STORAGE_GRAPHICS_PATH: str = "./storage/graphics"
+    STORAGE_EXPORTS_PATH: str = "./storage/exports"
+    STORAGE_MAX_FILE_SIZE_MB: int = 50
 
     def __init__(self, **kwargs):
         """Initialize settings with environment validation."""
@@ -218,30 +144,30 @@ class DimeSettings(BaseSettings):
         errors = []
 
         # Check required database URL
-        if not self.database.url:
+        if not self.DATABASE_URL:
             errors.append("DATABASE_URL is required")
 
         # Check Google ADK configuration
-        if not self.google_adk.project_id:
+        if not self.GOOGLE_ADK_PROJECT_ID:
             errors.append("GOOGLE_ADK_PROJECT_ID is required")
 
         if (
-            not self.google_adk.api_key
-            or not self.google_adk.api_key.get_secret_value().strip()
+            not self.GOOGLE_ADK_API_KEY
+            or not self.GOOGLE_ADK_API_KEY.get_secret_value().strip()
         ):
             errors.append("GOOGLE_ADK_API_KEY is required")
 
         # Check auth secrets in production
-        if self.app.environment == "production":
+        if self.APP_ENVIRONMENT == "production":
             if (
-                not self.auth.jwt_secret_key
-                or not self.auth.jwt_secret_key.get_secret_value().strip()
+                not self.AUTH_JWT_SECRET_KEY
+                or not self.AUTH_JWT_SECRET_KEY.get_secret_value().strip()
             ):
                 errors.append("AUTH_JWT_SECRET_KEY is required in production")
 
             if (
-                not self.auth.google_oauth_client_secret
-                or not self.auth.google_oauth_client_secret.get_secret_value().strip()
+                not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET
+                or not self.AUTH_GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value().strip()
             ):
                 errors.append(
                     "AUTH_GOOGLE_OAUTH_CLIENT_SECRET is required in production"
@@ -256,29 +182,32 @@ class DimeSettings(BaseSettings):
     def _ensure_storage_directories(self) -> None:
         """Ensure storage directories exist."""
         storage_paths = [
-            self.storage.base_path,
-            self.storage.research_path,
-            self.storage.articles_path,
-            self.storage.graphics_path,
-            self.storage.exports_path,
+            self.STORAGE_BASE_PATH,
+            self.STORAGE_RESEARCH_PATH,
+            self.STORAGE_ARTICLES_PATH,
+            self.STORAGE_GRAPHICS_PATH,
+            self.STORAGE_EXPORTS_PATH,
         ]
 
         for path in storage_paths:
             os.makedirs(path, exist_ok=True)
 
+    # ==========================================================================
+    # Convenience Properties
+    # ==========================================================================
     @property
     def is_development(self) -> bool:
         """Check if running in development mode."""
-        return self.app.environment == "development"
+        return self.APP_ENVIRONMENT == "development"
 
     @property
     def is_production(self) -> bool:
         """Check if running in production mode."""
-        return self.app.environment == "production"
+        return self.APP_ENVIRONMENT == "production"
 
     def get_database_url(self, hide_password: bool = False) -> str:
         """Get database URL with optional password masking."""
-        url = str(self.database.url)
+        url = str(self.DATABASE_URL)
         if hide_password:
             # Simple password masking for logs
             url = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
@@ -286,8 +215,8 @@ class DimeSettings(BaseSettings):
 
     def get_logfire_token(self) -> Optional[str]:
         """Get Logfire token safely."""
-        if self.logfire.token:
-            return self.logfire.token.get_secret_value()
+        if self.LOGFIRE_TOKEN:
+            return self.LOGFIRE_TOKEN.get_secret_value()
         return None
 
 
@@ -325,22 +254,22 @@ def reload_settings() -> DimeSettings:
     return get_settings()
 
 
-# Convenience aliases for commonly used settings
-def get_database_settings() -> DatabaseSettings:
-    """Get database settings."""
-    return get_settings().database
+# Convenience functions for backward compatibility
+def get_database_settings() -> DimeSettings:
+    """Get database settings (returns main settings for compatibility)."""
+    return get_settings()
 
 
-def get_agent_settings() -> AgentSettings:
-    """Get agent settings."""
-    return get_settings().agent
+def get_agent_settings() -> DimeSettings:
+    """Get agent settings (returns main settings for compatibility)."""
+    return get_settings()
 
 
-def get_logfire_settings() -> LogfireSettings:
-    """Get Logfire settings."""
-    return get_settings().logfire
+def get_logfire_settings() -> DimeSettings:
+    """Get Logfire settings (returns main settings for compatibility)."""
+    return get_settings()
 
 
-def get_app_settings() -> ApplicationSettings:
-    """Get application settings."""
-    return get_settings().app
+def get_app_settings() -> DimeSettings:
+    """Get application settings (returns main settings for compatibility)."""
+    return get_settings()

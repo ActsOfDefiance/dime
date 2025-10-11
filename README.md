@@ -8,6 +8,21 @@
 
 Dime is a sophisticated multi-agent content creation system designed for Acts of Defiance, specializing in generating high-quality articles about political liberation movements and historical analysis.
 
+## 📋 Current Status
+
+**✅ Phase 0: Foundation Complete**
+- ✅ **CLI Interface**: Working `health` and `start` commands
+- ✅ **ADK Web Interface**: Functional web interface at http://localhost:8000
+- ✅ **Agent System**: Basic content creation agents with research and writing tools
+- ✅ **Configuration**: Simplified case-sensitive environment variable management
+- ✅ **Core Architecture**: FastAPI + Google ADK integration
+
+**🚧 In Development**
+- Testing framework with ADK-specific patterns
+- Enhanced agent tools and workflows
+- Database and Redis integration
+- Full approval workflow interface
+
 ## ✨ Features
 
 ### 🤖 Multi-Agent Pipeline
@@ -32,9 +47,8 @@ Dime is a sophisticated multi-agent content creation system designed for Acts of
 
 ### Prerequisites
 - Python 3.13 or higher
-- Docker Desktop
-- Google Cloud account with ADK access
-- 8GB+ RAM recommended
+- Google ADK API key
+- 4GB+ RAM recommended
 
 ### Installation
 
@@ -44,41 +58,40 @@ git clone https://github.com/ActsOfDefiance/dime.git
 cd dime
 
 # Set up Python environment
-uv sync --dev
+uv sync
 
 # Copy environment configuration
-cp .env.example .env
-# Edit .env with your configuration
+cp .envrc.example .envrc
+# Edit .envrc with your configuration (Google ADK API key, database URL, etc.)
 
-# Start development services
-docker-compose up -d postgres redis
+# Load environment
+source .envrc
 
-# Initialize database
-uv run alembic upgrade head
+# Health check - verify configuration
+uv run python -m dime health
 
-# Run the application
-uv run uvicorn dime.main:app --reload --host 0.0.0.0 --port 8000
+# Start the ADK web interface
+uv run python -m dime start
 ```
 
-### First Article
+### First Interaction
 
 ```bash
-# Create a new article
-uv run dime create-article \"Civil Rights Movement Impact\"
+# Check system status
+uv run python -m dime health
 
-# Import research (markdown with footnotes)
-uv run dime import-research --file research.md --article-id <uuid>
+# Start the web interface (runs on http://localhost:8000)
+uv run python -m dime start
 
-# Process through agents
-uv run dime process --agent fact-checker --article-id <uuid>
-uv run dime process --agent writer --article-id <uuid>
-uv run dime process --agent editor --article-id <uuid>
-
-# Check status
-uv run dime status --article-id <uuid>
+# Access interfaces:
+# - Main ADK Web UI: http://localhost:8000/
+# - Developer Tools: http://localhost:8000/dev-ui/
 ```
 
-Access the web dashboard at http://localhost:8000 for the full approval workflow interface.
+The ADK web interface provides an interactive chat interface where you can:
+- Start conversations with the dime_agent
+- Test research and writing workflows
+- Use the developer UI for debugging and agent inspection
 
 ## 📋 Content Workflow
 
