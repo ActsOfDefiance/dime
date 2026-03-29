@@ -7,7 +7,7 @@ All settings are loaded from environment variables managed by direnv (.envrc).
 
 import os
 import re
-from typing import Optional, List, Literal, Annotated, Union
+from typing import Any, Annotated, List, Literal, Optional, Union
 from pydantic import Field, field_validator, SecretStr, model_validator
 from pydantic.networks import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
@@ -37,7 +37,7 @@ class DimeSettings(BaseSettings):
     # ==========================================================================
     # Redis Cache Configuration
     # ==========================================================================
-    REDIS_URL: RedisDsn = "redis://localhost:6379/0"
+    REDIS_URL: RedisDsn = RedisDsn("redis://localhost:6379/0")
     REDIS_CACHE_TTL: int = 3600
     REDIS_MAX_CONNECTIONS: int = 20
 
@@ -70,11 +70,11 @@ class DimeSettings(BaseSettings):
     @model_validator(mode="after")
     def validate_send_to_logfire(self):
         """Disable Logfire if no token provided."""
-        if self.LOGFIRE_TOKEN is None or (
-            isinstance(self.LOGFIRE_TOKEN, SecretStr)
-            and not self.LOGFIRE_TOKEN.get_secret_value().strip()
+        if (
+            self.LOGFIRE_TOKEN is None
+            or not self.LOGFIRE_TOKEN.get_secret_value().strip()
         ):
-            self.LOGFIRE_SEND_TO_LOGFIRE = False
+            object.__setattr__(self, "LOGFIRE_SEND_TO_LOGFIRE", False)
         return self
 
     # ==========================================================================
@@ -109,18 +109,13 @@ class DimeSettings(BaseSettings):
         """Parse allowed origins from comma-separated string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
-        elif isinstance(v, list):
-            return v
-        else:
-            raise ValueError(
-                f"APP_ALLOWED_ORIGINS must be a string or list, got {type(v)}"
-            )
+        return v
 
     @model_validator(mode="after")
     def set_debug_for_development(self):
         """Auto-enable debug in development environment."""
         if self.APP_ENVIRONMENT == "development":
-            self.APP_DEBUG = True
+            object.__setattr__(self, "APP_DEBUG", True)
         return self
 
     # ==========================================================================
@@ -133,15 +128,15 @@ class DimeSettings(BaseSettings):
     STORAGE_EXPORTS_PATH: str = "./storage/exports"
     STORAGE_MAX_FILE_SIZE_MB: int = 50
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize settings with environment validation."""
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # pyright: ignore[reportUnknownArgumentType]
         self._validate_environment()
         self._ensure_storage_directories()
 
     def _validate_environment(self) -> None:
         """Validate critical environment configuration."""
-        errors = []
+        errors: list[str] = []
 
         # Check required database URL
         if not self.DATABASE_URL:

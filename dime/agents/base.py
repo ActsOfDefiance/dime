@@ -19,7 +19,7 @@ class DimeBaseAgent(LlmAgent):
         **kwargs: Any,
     ) -> None:
         """Initialize base agent with common settings."""
-        super().__init__(name=name, model=model, instruction=instruction, **kwargs)
+        super().__init__(name=name, model=model, instruction=instruction, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
     def get_agent_info(self) -> Dict[str, Any]:
         """Get agent information for debugging and monitoring."""
