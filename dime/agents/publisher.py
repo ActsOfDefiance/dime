@@ -12,7 +12,7 @@ from typing import List, Any
 class PublisherAgent(DimeBaseAgent):
     """Agent that coordinates research and writing for political liberation content."""
 
-    def __init__(self, sub_agents: List[Any] = None) -> None:
+    def __init__(self, sub_agents: List[Any] | None = None) -> None:
         """Initialize publisher agent with specialized instruction."""
         instruction = (
             "You are the publisher of a journal which focuses on the history of liberation struggles. "
