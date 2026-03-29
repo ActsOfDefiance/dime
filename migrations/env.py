@@ -1,11 +1,12 @@
 import asyncio
-import os
 from logging.config import fileConfig
 
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+from dime.config import get_settings
 
 config = context.config
 
@@ -17,10 +18,8 @@ if config.config_file_name is not None:
 # target_metadata = Base.metadata
 target_metadata = None
 
-# Read database URL from environment
-database_url = os.environ.get("DATABASE_URL")
-if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+# Read database URL from centralized application settings
+config.set_main_option("sqlalchemy.url", str(get_settings().DATABASE_URL))
 
 
 def run_migrations_offline() -> None:
