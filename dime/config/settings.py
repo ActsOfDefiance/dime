@@ -128,6 +128,11 @@ class DimeSettings(BaseSettings):
     STORAGE_EXPORTS_PATH: str = "./storage/exports"
     STORAGE_MAX_FILE_SIZE_MB: int = 50
 
+    # ==========================================================================
+    # Publishing Configuration
+    # ==========================================================================
+    HUGO_CONTENT_DIR: str = "./hugo-content"
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize settings with environment validation."""
         super().__init__(**kwargs)  # pyright: ignore[reportUnknownArgumentType]

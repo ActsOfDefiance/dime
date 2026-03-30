@@ -28,6 +28,7 @@ def test_env() -> Generator[dict[str, str], None, None]:
         "AUTH_JWT_SECRET_KEY": "test-jwt-secret",
         "APP_ENVIRONMENT": "development",
         "LOGFIRE_TOKEN": "",  # Disable Logfire in tests
+        "HUGO_CONTENT_DIR": "/tmp/test-hugo-content",
     }
 
     # Set test environment variables
