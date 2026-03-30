@@ -7,6 +7,8 @@ Integration tests (marked): CRUD operations requiring a live PostgreSQL instance
 
 import uuid
 
+from sqlalchemy import inspect as sa_inspect
+
 from dime.db import make_async_url
 from dime.models.article import Article
 from dime.models.article_checkpoint import ArticleCheckpoint
@@ -103,10 +105,8 @@ class TestTableNames:
 
 
 def _column_names(model: type) -> set[str]:
-    table = model.__dict__.get("__table__")
-    if table is None:
-        return set()
-    return set(table.columns.keys())  # type: ignore[union-attr]
+    mapper = sa_inspect(model)  # type: ignore[reportUnknownVariableType]
+    return {str(col.key) for col in mapper.column_attrs}  # type: ignore[union-attr]
 
 
 class TestColumnPresence:
