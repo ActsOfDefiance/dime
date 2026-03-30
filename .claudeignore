@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+.git/
+htmlcov/
+.coverage
+*.egg-info/
+dist/
+build/
+.envrc
