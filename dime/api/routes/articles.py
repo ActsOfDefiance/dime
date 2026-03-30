@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -103,17 +104,21 @@ async def create_article(
     )
     db.add(article)
 
-    # Seed image slots from project style_guide if present
+    # Seed image slots from project style_guide if present.
+    # Skip malformed entries — style_guide is user-supplied JSON.
     slot_defs: list[Any] = project.style_guide.get("image_slots", [])
     for slot_def in slot_defs:
-        slot = ImageSlot(
-            id=uuid.uuid4(),
-            article_id=article.id,
-            slot_name=str(slot_def.get("name", "")),
-            width=int(slot_def.get("width", 0)),
-            height=int(slot_def.get("height", 0)),
-            format=str(slot_def.get("format", "webp")),
-        )
+        try:
+            slot = ImageSlot(
+                id=uuid.uuid4(),
+                article_id=article.id,
+                slot_name=str(slot_def.get("name", "")),
+                width=int(slot_def.get("width", 0)),
+                height=int(slot_def.get("height", 0)),
+                format=str(slot_def.get("format", "webp")),
+            )
+        except (TypeError, ValueError, AttributeError):
+            continue
         db.add(slot)
 
     await db.commit()
@@ -236,12 +241,19 @@ async def get_article_package(
     )
     slots = list(slots_result.scalars().all())
 
+    # Batch-load all variants in one query instead of one per slot (avoids N+1).
+    slot_ids = [s.id for s in slots]
+    variants_by_slot: dict[uuid.UUID, list[ImageVariant]] = defaultdict(list)
+    if slot_ids:
+        variants_result = await db.execute(
+            select(ImageVariant).where(ImageVariant.slot_id.in_(slot_ids))
+        )
+        for v in variants_result.scalars().all():
+            variants_by_slot[v.slot_id].append(v)
+
     slot_data: list[dict[str, object]] = []
     for slot in slots:
-        variants_result = await db.execute(
-            select(ImageVariant).where(ImageVariant.slot_id == slot.id)
-        )
-        variants = list(variants_result.scalars().all())
+        variants = variants_by_slot[slot.id]
         slot_data.append(
             {
                 "id": str(slot.id),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
@@ -25,16 +26,20 @@ async def list_image_slots(article_id: uuid.UUID, db: DbSession) -> list[ImageSl
     )
     slots = list(slots_result.scalars().all())
 
+    # Batch-load all variants in one query instead of one per slot (avoids N+1).
+    slot_ids = [s.id for s in slots]
+    variants_by_slot: dict[uuid.UUID, list[ImageVariantRead]] = defaultdict(list)
+    if slot_ids:
+        variants_result = await db.execute(
+            select(ImageVariant).where(ImageVariant.slot_id.in_(slot_ids))
+        )
+        for v in variants_result.scalars().all():
+            variants_by_slot[v.slot_id].append(ImageVariantRead.model_validate(v))
+
     result: list[ImageSlotRead] = []
     for slot in slots:
-        variants_result = await db.execute(
-            select(ImageVariant).where(ImageVariant.slot_id == slot.id)
-        )
-        variants = [
-            ImageVariantRead.model_validate(v) for v in variants_result.scalars().all()
-        ]
         slot_read = ImageSlotRead.model_validate(slot)
-        slot_read.variants = variants
+        slot_read.variants = variants_by_slot[slot.id]
         result.append(slot_read)
     return result
 
