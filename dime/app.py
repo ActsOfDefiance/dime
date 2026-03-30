@@ -6,8 +6,12 @@ for automatic agent discovery and web interface integration.
 """
 
 import os
+
 from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
+
+from dime.adapters.factory import build_adapters
+from dime.api.routes import router as dime_router
 from dime.config import get_settings
 
 
@@ -34,6 +38,13 @@ def create_app() -> FastAPI:
     app.title = settings.APP_NAME
     app.description = "Dime Content Creation Agent System"
     app.version = settings.APP_VERSION
+
+    # Mount dime REST + WebSocket routes
+    app.include_router(dime_router, prefix="/api/v1")
+
+    @app.on_event("startup")
+    async def startup() -> None:
+        app.state.adapters = build_adapters(settings)
 
     return app
 

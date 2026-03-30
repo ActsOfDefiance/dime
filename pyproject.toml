@@ -36,6 +36,11 @@ markers = [
 ]
 addopts = "-m 'not integration'"
 
+[tool.coverage.run]
+# Integration test files are excluded from the default coverage threshold.
+# They run separately with: uv run pytest -m integration
+omit = ["tests/test_api.py"]
+
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
