@@ -101,6 +101,7 @@ class BaseWorker(ABC):
                         "Article %s transitioned to %s", article_id, target_state.value
                     )
                 else:
+                    await db.commit()
                     logger.info(
                         "Article %s: no state change (worker completed in place)",
                         article_id,

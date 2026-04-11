@@ -150,7 +150,9 @@ class TestImageWorker:
 
         assert article.state is ArticleState.ART_GENERATING
 
-    async def test_no_db_commit_on_no_state_change(self) -> None:
+    async def test_db_commit_called_even_without_state_change(self) -> None:
+        """Commit must happen even when run_task returns None, so agent-written
+        DB changes (e.g. image variants) are persisted."""
         article = _make_article(state=ArticleState.ART_GENERATING)
         broker = AsyncMock()
         factory = _make_session_factory(article)
@@ -158,9 +160,8 @@ class TestImageWorker:
 
         await worker.handle({"article_id": str(article.id)})
 
-        # Session commit should NOT have been called — no state change
         session = factory.return_value.__aenter__.return_value
-        session.commit.assert_not_called()
+        session.commit.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
