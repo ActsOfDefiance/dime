@@ -4,9 +4,10 @@ import asyncio
 import logging
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from dime.adapters.protocols import BrokerAdapter
+from dime.adapters.protocols import BrokerAdapter, FileSystemAdapter
+from dime.agents.runner import run_agent
+from dime.agents.tools.filesystem_tools import make_read_tool, make_write_tool
 from dime.models.article import Article
 from dime.pipeline.states import ArticleState
 from dime.workers.base import BaseWorker
@@ -19,26 +20,43 @@ class WritingWorker(BaseWorker):
 
     task_type = "write"
 
-    def __init__(
-        self,
-        broker: BrokerAdapter,
-        session_factory: async_sessionmaker[AsyncSession],
-    ) -> None:
-        super().__init__(broker, session_factory)
-
     async def run_task(
         self, article: Article, payload: dict[str, Any]
     ) -> ArticleState | None:
         """Run the writing agent for *article*."""
-        from dime.agents.writer import WriterAgent  # noqa: PLC0415
+        from dime.agents.writer import WriterAgent
 
-        agent = WriterAgent()
+        async with self._session_factory() as db:
+            project = await self._load_project(db, article.project_id)
+            content_guide = project.content_guide
+
+        tools: list[Any] = [
+            make_read_tool(self._filesystem),
+            make_write_tool(self._filesystem),
+        ]
+
+        agent = WriterAgent(tools=tools, content_guide=content_guide)
+
+        input_text = (
+            f"Write an article based on the approved research notes.\n\n"
+            f"Title: {article.title}\n\n"
+            f"Read the research notes from '{article.slug}/research.md' "
+            f"and produce '{article.slug}/draft.md'."
+        )
+
         logger.info(
             "WritingWorker: running agent for article %s — %s",
             article.id,
             article.title,
         )
-        _ = agent
+
+        result = await run_agent(agent, input_text)
+        logger.info(
+            "WritingWorker: agent completed for article %s (%d chars output)",
+            article.id,
+            len(result),
+        )
+
         return ArticleState.DRAFT_REVIEW
 
 
@@ -47,12 +65,17 @@ def main() -> None:
     import os
 
     from dime.adapters.broker.redis import RedisBrokerAdapter
+    from dime.adapters.filesystem.local import LocalFileSystemAdapter
     from dime.db import AsyncSessionLocal
 
     logging.basicConfig(level=logging.INFO)
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    storage_path = os.environ.get("STORAGE_BASE_PATH", "/tmp/dime-storage")
     broker: BrokerAdapter = RedisBrokerAdapter(url=redis_url)
-    worker = WritingWorker(broker=broker, session_factory=AsyncSessionLocal)
+    filesystem: FileSystemAdapter = LocalFileSystemAdapter(base_path=storage_path)
+    worker = WritingWorker(
+        broker=broker, session_factory=AsyncSessionLocal, filesystem=filesystem
+    )
     asyncio.run(worker.start())
 
 

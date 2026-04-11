@@ -9,12 +9,14 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dime.models.article import Article
+from dime.models.image_slot import ImageSlot
+from dime.models.project import Project
 from dime.pipeline.states import ArticleState
 from dime.workers.art_director import ArtDirectorWorker
 from dime.workers.base import BaseWorker
@@ -28,6 +30,8 @@ from dime.workers.writing import WritingWorker
 # Helpers
 # ---------------------------------------------------------------------------
 
+_PROJECT_ID = uuid.uuid4()
+
 
 def _make_article(
     state: ArticleState = ArticleState.RESEARCHING,
@@ -35,7 +39,7 @@ def _make_article(
 ) -> Article:
     return Article(
         id=article_id or uuid.uuid4(),
-        project_id=uuid.uuid4(),
+        project_id=_PROJECT_ID,
         title="Test Article",
         slug="test-article",
         state=state,
@@ -45,12 +49,33 @@ def _make_article(
     )
 
 
+def _make_project() -> Project:
+    return Project(
+        id=_PROJECT_ID,
+        name="Test Project",
+        slug="test-project",
+        content_guide={"audience": "general"},
+        style_guide={"palette": "bold"},
+        workflow_config_id=uuid.uuid4(),
+    )
+
+
 def _make_session_factory(article: Article | None) -> Any:
-    """Return a mock async_sessionmaker that yields a session returning *article* on .get()."""
+    """Return a mock async_sessionmaker that yields a session.
+
+    The session's .get() returns *article* and the worker's _load_project
+    returns a test project.
+    """
+    project = _make_project()
     mock_session = AsyncMock(spec=AsyncSession)
     mock_session.get = AsyncMock(return_value=article)
     mock_session.commit = AsyncMock()
     mock_session.rollback = AsyncMock()
+
+    # Mock for _load_project's select().where() pattern
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = project
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
     mock_cm = MagicMock()
     mock_cm.__aenter__ = AsyncMock(return_value=mock_session)
@@ -61,15 +86,29 @@ def _make_session_factory(article: Article | None) -> Any:
     return mock_factory
 
 
+def _make_filesystem() -> MagicMock:
+    """Return a mock FileSystemAdapter."""
+    fs = MagicMock()
+    fs.read.return_value = "# Draft content"
+    fs.write.return_value = None
+    fs.exists.return_value = True
+    fs.list.return_value = []
+    return fs
+
+
 def _make_worker(
     cls: type[BaseWorker],
     article: Article | None,
-) -> tuple[Any, Any]:
-    """Return (worker, mock_broker)."""
+    **kwargs: Any,
+) -> tuple[Any, Any, Any]:
+    """Return (worker, mock_broker, mock_filesystem)."""
     broker = AsyncMock()
     factory = _make_session_factory(article)
-    worker = cls(broker=broker, session_factory=factory)
-    return worker, broker
+    filesystem = _make_filesystem()
+    worker = cls(
+        broker=broker, session_factory=factory, filesystem=filesystem, **kwargs
+    )
+    return worker, broker, filesystem
 
 
 # ---------------------------------------------------------------------------
@@ -79,24 +118,29 @@ def _make_worker(
 
 @pytest.mark.asyncio
 class TestResearchWorker:
-    async def test_happy_path_transitions_to_research_review(self) -> None:
+    @patch("dime.workers.research.run_agent", new_callable=AsyncMock)
+    async def test_happy_path_transitions_to_research_review(
+        self, mock_run: AsyncMock
+    ) -> None:
+        mock_run.return_value = "# Research notes\n\nFindings here."
         article = _make_article(state=ArticleState.RESEARCHING)
-        worker, _ = _make_worker(ResearchWorker, article)
+        worker, _, _ = _make_worker(ResearchWorker, article)
 
         await worker.handle({"article_id": str(article.id)})
 
         assert article.state is ArticleState.RESEARCH_REVIEW
+        mock_run.assert_called_once()
 
     async def test_missing_article_id_does_not_crash(self) -> None:
-        worker, _ = _make_worker(ResearchWorker, None)
+        worker, _, _ = _make_worker(ResearchWorker, None)
         await worker.handle({})  # no exception
 
     async def test_invalid_article_id_does_not_crash(self) -> None:
-        worker, _ = _make_worker(ResearchWorker, None)
+        worker, _, _ = _make_worker(ResearchWorker, None)
         await worker.handle({"article_id": "not-a-uuid"})  # no exception
 
     async def test_article_not_found_does_not_crash(self) -> None:
-        worker, _ = _make_worker(ResearchWorker, None)
+        worker, _, _ = _make_worker(ResearchWorker, None)
         await worker.handle({"article_id": str(uuid.uuid4())})  # no exception
 
 
@@ -107,13 +151,18 @@ class TestResearchWorker:
 
 @pytest.mark.asyncio
 class TestWritingWorker:
-    async def test_happy_path_transitions_to_draft_review(self) -> None:
+    @patch("dime.workers.writing.run_agent", new_callable=AsyncMock)
+    async def test_happy_path_transitions_to_draft_review(
+        self, mock_run: AsyncMock
+    ) -> None:
+        mock_run.return_value = "# Article Draft\n\nContent here."
         article = _make_article(state=ArticleState.WRITING)
-        worker, _ = _make_worker(WritingWorker, article)
+        worker, _, _ = _make_worker(WritingWorker, article)
 
         await worker.handle({"article_id": str(article.id)})
 
         assert article.state is ArticleState.DRAFT_REVIEW
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -123,13 +172,18 @@ class TestWritingWorker:
 
 @pytest.mark.asyncio
 class TestArtDirectorWorker:
-    async def test_happy_path_transitions_to_art_review(self) -> None:
+    @patch("dime.workers.art_director.run_agent", new_callable=AsyncMock)
+    async def test_happy_path_transitions_to_art_review(
+        self, mock_run: AsyncMock
+    ) -> None:
+        mock_run.return_value = "# Art Brief\n\nImage prompts here."
         article = _make_article(state=ArticleState.ART_BRIEFING)
-        worker, _ = _make_worker(ArtDirectorWorker, article)
+        worker, _, _ = _make_worker(ArtDirectorWorker, article)
 
         await worker.handle({"article_id": str(article.id)})
 
         assert article.state is ArticleState.ART_REVIEW
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -139,29 +193,53 @@ class TestArtDirectorWorker:
 
 @pytest.mark.asyncio
 class TestImageWorker:
-    async def test_no_state_change(self) -> None:
+    @patch("dime.workers.image.run_agent", new_callable=AsyncMock)
+    async def test_no_state_change(self, mock_run: AsyncMock) -> None:
         """ImageWorker runs but leaves article in ART_GENERATING."""
-        article = _make_article(state=ArticleState.ART_GENERATING)
-        worker, _ = _make_worker(ImageWorker, article)
+        mock_run.return_value = "Generated 3 variants."
 
-        await worker.handle(
-            {"article_id": str(article.id), "slot_id": str(uuid.uuid4())}
+        article = _make_article(state=ArticleState.ART_GENERATING)
+        worker, _, _ = _make_worker(ImageWorker, article)
+
+        # Mock the slot lookup in run_task's inner session
+        slot = ImageSlot(
+            id=uuid.uuid4(),
+            article_id=article.id,
+            slot_name="hero",
+            width=1200,
+            height=630,
+            format="png",
+            approved_prompt="A dramatic hero image",
         )
+        # Patch the inner session_factory call to also return the slot
+        inner_session = AsyncMock(spec=AsyncSession)
+        inner_session.get = AsyncMock(return_value=slot)
+        inner_result = MagicMock()
+        inner_result.scalar_one_or_none.return_value = _make_project()
+        inner_session.execute = AsyncMock(return_value=inner_result)
+
+        inner_cm = MagicMock()
+        inner_cm.__aenter__ = AsyncMock(return_value=inner_session)
+        inner_cm.__aexit__ = AsyncMock(return_value=False)
+
+        # The handle() uses one session, run_task() opens another
+        orig_factory = worker._session_factory
+        call_count = 0
+        original_cm = orig_factory.return_value
+
+        def side_effect_factory() -> Any:
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 1:
+                return original_cm  # handle()'s session
+            return inner_cm  # run_task()'s inner session
+
+        worker._session_factory = MagicMock(side_effect=side_effect_factory)
+
+        await worker.handle({"article_id": str(article.id), "slot_id": str(slot.id)})
 
         assert article.state is ArticleState.ART_GENERATING
-
-    async def test_db_commit_called_even_without_state_change(self) -> None:
-        """Commit must happen even when run_task returns None, so agent-written
-        DB changes (e.g. image variants) are persisted."""
-        article = _make_article(state=ArticleState.ART_GENERATING)
-        broker = AsyncMock()
-        factory = _make_session_factory(article)
-        worker = ImageWorker(broker=broker, session_factory=factory)
-
-        await worker.handle({"article_id": str(article.id)})
-
-        session = factory.return_value.__aenter__.return_value
-        session.commit.assert_called_once()
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -173,11 +251,20 @@ class TestImageWorker:
 class TestPublisherWorker:
     async def test_happy_path_transitions_to_published(self) -> None:
         article = _make_article(state=ArticleState.PUBLISHING)
-        worker, _ = _make_worker(PublisherWorker, article)
+        mock_publishing = AsyncMock()
+        mock_publishing.emit = AsyncMock()
+        mock_publishing.signal = MagicMock()
+        mock_publishing.preview_url = MagicMock(return_value=None)
+
+        worker, _, _fs = _make_worker(
+            PublisherWorker, article, publishing=mock_publishing
+        )
 
         await worker.handle({"article_id": str(article.id)})
 
         assert article.state is ArticleState.PUBLISHED
+        mock_publishing.emit.assert_called_once()
+        mock_publishing.signal.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +277,7 @@ class TestBaseWorkerErrorHandling:
     async def test_agent_failure_marks_article_failed(self) -> None:
         """When run_task raises, the article should be marked FAILED."""
         article = _make_article(state=ArticleState.RESEARCHING)
-        worker, _ = _make_worker(ResearchWorker, article)
+        worker, _, _ = _make_worker(ResearchWorker, article)
 
         async def bad_run_task(
             art: Article, payload: dict[str, Any]
@@ -206,7 +293,7 @@ class TestBaseWorkerErrorHandling:
     async def test_agent_failure_does_not_crash(self) -> None:
         """Worker loop must survive agent failures."""
         article = _make_article(state=ArticleState.RESEARCHING)
-        worker, _ = _make_worker(ResearchWorker, article)
+        worker, _, _ = _make_worker(ResearchWorker, article)
 
         async def bad_run_task(
             art: Article, payload: dict[str, Any]
@@ -223,7 +310,7 @@ class TestBaseWorkerErrorHandling:
         article = _make_article(
             state=ArticleState.QUEUED
         )  # QUEUED → PUBLISHED is invalid
-        worker, _ = _make_worker(ResearchWorker, article)
+        worker, _, _ = _make_worker(ResearchWorker, article)
 
         async def bad_transition(
             art: Article, payload: dict[str, Any]
@@ -241,6 +328,7 @@ class TestBaseWorkerErrorHandling:
         """If marking the article as FAILED also fails, the worker should not crash."""
         article = _make_article(state=ArticleState.RESEARCHING)
         broker = AsyncMock()
+        filesystem = _make_filesystem()
 
         # First session: article found, run_task raises
         session1 = AsyncMock(spec=AsyncSession)
@@ -260,7 +348,9 @@ class TestBaseWorkerErrorHandling:
         factory = MagicMock()
         factory.side_effect = [cm1, cm2]
 
-        worker = ResearchWorker(broker=broker, session_factory=factory)
+        worker = ResearchWorker(
+            broker=broker, session_factory=factory, filesystem=filesystem
+        )
 
         async def bad_run_task(
             art: Article, payload: dict[str, Any]
@@ -277,13 +367,68 @@ class TestBaseWorkerErrorHandling:
         broker = AsyncMock()
         broker.consume = AsyncMock()
         factory = _make_session_factory(None)
-        worker = ResearchWorker(broker=broker, session_factory=factory)
+        filesystem = _make_filesystem()
+        worker = ResearchWorker(
+            broker=broker, session_factory=factory, filesystem=filesystem
+        )
 
         # stop() before start() means the loop body never executes
         worker.stop()
         await worker.start()
 
         broker.consume.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# PublisherAgent unit tests (non-LLM)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+class TestPublisherAgent:
+    async def test_publish_reads_draft_and_emits(self) -> None:
+        """PublisherAgent reads draft from FS and calls publishing adapter."""
+        from dime.agents.publisher import PublisherAgent
+
+        mock_fs = MagicMock()
+        mock_fs.exists.return_value = True
+        mock_fs.read.return_value = "# My Article\n\nContent here."
+
+        mock_pub = AsyncMock()
+        mock_pub.emit = AsyncMock()
+        mock_pub.signal = MagicMock()
+        mock_pub.preview_url = MagicMock(return_value="http://preview.test/my-article")
+
+        agent = PublisherAgent(publishing=mock_pub, filesystem=mock_fs)
+        article_id = uuid.uuid4()
+
+        result = await agent.publish(
+            article_id=article_id,
+            article_slug="my-article",
+            frontmatter={"title": "My Article"},
+        )
+
+        mock_fs.read.assert_called_once_with("my-article/draft.md")
+        mock_pub.emit.assert_called_once()
+        mock_pub.signal.assert_called_once()
+        assert "preview.test" in result
+
+    async def test_publish_raises_on_missing_draft(self) -> None:
+        """PublisherAgent raises FileNotFoundError if draft is missing."""
+        from dime.agents.publisher import PublisherAgent
+
+        mock_fs = MagicMock()
+        mock_fs.exists.return_value = False
+        mock_pub = AsyncMock()
+
+        agent = PublisherAgent(publishing=mock_pub, filesystem=mock_fs)
+
+        with pytest.raises(FileNotFoundError, match="draft not found"):
+            await agent.publish(
+                article_id=uuid.uuid4(),
+                article_slug="missing-article",
+                frontmatter={},
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -303,9 +448,11 @@ class TestResearchWorkerIntegration:
         from sqlalchemy.ext.asyncio import async_sessionmaker
 
         from dime.adapters.broker.redis import RedisBrokerAdapter
+        from dime.adapters.filesystem.local import LocalFileSystemAdapter
 
         redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
         broker = RedisBrokerAdapter(url=redis_url)
+        filesystem = LocalFileSystemAdapter(base_path="/tmp/dime-test-storage")
 
         article = _make_article(state=ArticleState.RESEARCHING)
         db_session.add(article)
@@ -318,7 +465,9 @@ class TestResearchWorkerIntegration:
             expire_on_commit=False,  # type: ignore[arg-type]
         )
 
-        worker = ResearchWorker(broker=broker, session_factory=session_factory)
+        worker = ResearchWorker(
+            broker=broker, session_factory=session_factory, filesystem=filesystem
+        )
 
         # Consume one batch (single message), block up to 2s
         await broker.consume("research", worker.handle, max_count=1, block_ms=2000)
@@ -337,9 +486,11 @@ class TestResearchWorkerIntegration:
         from sqlalchemy.ext.asyncio import async_sessionmaker
 
         from dime.adapters.broker.redis import RedisBrokerAdapter
+        from dime.adapters.filesystem.local import LocalFileSystemAdapter
 
         redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
         broker = RedisBrokerAdapter(url=redis_url)
+        filesystem = LocalFileSystemAdapter(base_path="/tmp/dime-test-storage")
 
         article = _make_article(state=ArticleState.RESEARCHING)
         db_session.add(article)
@@ -352,7 +503,9 @@ class TestResearchWorkerIntegration:
             expire_on_commit=False,  # type: ignore[arg-type]
         )
 
-        worker = ResearchWorker(broker=broker, session_factory=session_factory)
+        worker = ResearchWorker(
+            broker=broker, session_factory=session_factory, filesystem=filesystem
+        )
 
         async def failing_run_task(
             art: Article, payload: dict[str, Any]

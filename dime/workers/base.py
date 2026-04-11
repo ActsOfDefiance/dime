@@ -6,10 +6,12 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from dime.adapters.protocols import BrokerAdapter
+from dime.adapters.protocols import BrokerAdapter, FileSystemAdapter
 from dime.models.article import Article
+from dime.models.project import Project
 from dime.pipeline.state_machine import InvalidTransitionError, transition
 from dime.pipeline.states import ArticleState
 
@@ -30,9 +32,11 @@ class BaseWorker(ABC):
         self,
         broker: BrokerAdapter,
         session_factory: async_sessionmaker[AsyncSession],
+        filesystem: FileSystemAdapter,
     ) -> None:
         self._broker = broker
         self._session_factory = session_factory
+        self._filesystem = filesystem
         self._stop_event = asyncio.Event()
 
     def stop(self) -> None:
@@ -50,6 +54,14 @@ class BaseWorker(ABC):
         Raise any exception on failure — BaseWorker.handle() will catch it and
         mark the article as FAILED.
         """
+
+    async def _load_project(self, db: AsyncSession, project_id: uuid.UUID) -> Project:
+        """Load the project for an article to access content/style guides."""
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
+        if project is None:
+            raise ValueError(f"Project not found: {project_id}")
+        return project
 
     async def _mark_failed(self, article_id: uuid.UUID) -> None:
         """Open a fresh session and mark *article_id* as FAILED."""
