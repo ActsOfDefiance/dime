@@ -7,6 +7,7 @@ and each agent class instantiates with the correct name, model, and instruction.
 
 import pytest
 
+import dime.agents
 from dime.agents import (
     ArtDirectorAgent,
     DimeBaseAgent,
@@ -14,6 +15,7 @@ from dime.agents import (
     PublisherAgent,
     ResearcherAgent,
     WriterAgent,
+    __all__ as AGENTS_ALL,
 )
 from dime.agents.prompts import (
     ART_DIRECTOR_PROMPT,
@@ -143,8 +145,6 @@ class TestModuleExports:
 
     def test_all_agents_exported(self) -> None:
         """All agent classes are accessible from dime.agents."""
-        import dime.agents
-
         assert hasattr(dime.agents, "ArtDirectorAgent")
         assert hasattr(dime.agents, "DimeBaseAgent")
         assert hasattr(dime.agents, "ImageAgent")
@@ -154,8 +154,6 @@ class TestModuleExports:
 
     def test_all_list_complete(self) -> None:
         """__all__ contains all expected exports."""
-        from dime.agents import __all__
-
         expected = {
             "ArtDirectorAgent",
             "DimeBaseAgent",
@@ -164,4 +162,4 @@ class TestModuleExports:
             "ResearcherAgent",
             "WriterAgent",
         }
-        assert set(__all__) == expected
+        assert set(AGENTS_ALL) == expected

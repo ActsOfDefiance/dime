@@ -17,14 +17,6 @@ from dime.api.routes import router as dime_router
 from dime.config import get_settings
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Application lifespan: build adapters on startup."""
-    settings = get_settings()
-    app.state.adapters = build_adapters(settings)
-    yield
-
-
 def create_app() -> FastAPI:
     """
     Create and configure the main FastAPI application.
@@ -44,6 +36,18 @@ def create_app() -> FastAPI:
         agent_dir=os.path.join(os.path.dirname(__file__), "..", "agents"), web=True
     )
 
+    # Compose our lifespan with ADK's existing lifespan so we don't clobber
+    # any startup/shutdown behaviour that get_fast_api_app() configured.
+    adk_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def composed_lifespan(a: FastAPI) -> AsyncIterator[None]:
+        app.state.adapters = build_adapters(settings)
+        async with adk_lifespan(a):
+            yield
+
+    app.router.lifespan_context = composed_lifespan
+
     # Configure app metadata
     app.title = settings.APP_NAME
     app.description = "Dime Content Creation Agent System"
@@ -51,8 +55,6 @@ def create_app() -> FastAPI:
 
     # Mount dime REST + WebSocket routes
     app.include_router(dime_router, prefix="/api/v1")
-
-    app.router.lifespan_context = lifespan
 
     return app
 
