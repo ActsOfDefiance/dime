@@ -125,14 +125,13 @@ class TestStateMachine:
         assert is_valid_transition(ArticleState.QUEUED, ArticleState.QUEUED) is False
 
     def test_all_valid_transitions_are_reachable(self) -> None:
-        assert len(VALID_TRANSITIONS) == 17
+        assert len(VALID_TRANSITIONS) == 42
 
     def test_approve_transitions_cover_all_review_states(self) -> None:
         expected = {
             ArticleState.RESEARCH_REVIEW,
             ArticleState.DRAFT_REVIEW,
             ArticleState.ART_REVIEW,
-            ArticleState.ART_GENERATING,
             ArticleState.FINAL_REVIEW,
         }
         assert set(APPROVE_TRANSITIONS.keys()) == expected
@@ -155,7 +154,7 @@ class TestStateMachine:
         assert APPROVE_TRANSITIONS[ArticleState.FINAL_REVIEW] == ArticleState.APPROVED
 
     def test_worker_tasks_dict_has_four_entries(self) -> None:
-        assert len(WORKER_TASKS) == 4
+        assert len(WORKER_TASKS) == 5
 
 
 # ---------------------------------------------------------------------------

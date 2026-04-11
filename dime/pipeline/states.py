@@ -14,3 +14,5 @@ class ArticleState(str, enum.Enum):
     APPROVED = "approved"
     PUBLISHING = "publishing"
     PUBLISHED = "published"
+    FAILED = "failed"
+    ARCHIVED = "archived"

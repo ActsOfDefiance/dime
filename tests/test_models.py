@@ -44,12 +44,14 @@ class TestArticleState:
             "approved",
             "publishing",
             "published",
+            "failed",
+            "archived",
         }
         actual = {s.value for s in ArticleState}
         assert actual == expected
 
     def test_state_count(self) -> None:
-        assert len(ArticleState) == 12
+        assert len(ArticleState) == 14
 
     def test_is_str_enum(self) -> None:
         assert isinstance(ArticleState.QUEUED, str)
