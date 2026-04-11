@@ -1,8 +1,10 @@
+from typing import Any
+
 from google.adk.agents import SequentialAgent, LlmAgent
 from google.adk.tools.function_tool import FunctionTool
 
 
-def say_something_dumb() -> dict:
+def say_something_dumb() -> dict[str, Any]:
     return {"status": "success", "report": ("What time is love?")}
 
 
@@ -30,8 +32,8 @@ writer = LlmAgent(
 
 root_agent = SequentialAgent(
     name="publisher",
-    description="Publisher agent for liberation movement content",
-    instruction=(
+    description=(
+        "Publisher agent for liberation movement content. "
         "You are the publisher of a journal which focuses on the history of liberation struggles. "
         "Your journal cares deeply about citing sources and accuracy, as such you require rigorous "
         "research to be done on any topic before producing an article. However your target audience "

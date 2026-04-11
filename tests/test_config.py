@@ -9,7 +9,7 @@ import pytest
 from dime.config import reload_settings
 
 
-def test_settings_loads_from_environment(test_env):
+def test_settings_loads_from_environment(test_env: dict[str, str]) -> None:
     """Test that settings load correctly from environment variables."""
     settings = reload_settings()
 
@@ -19,7 +19,7 @@ def test_settings_loads_from_environment(test_env):
     assert settings.APP_DEBUG is True  # Auto-enabled in development
 
 
-def test_settings_database_url_masking(test_env):
+def test_settings_database_url_masking(test_env: dict[str, str]) -> None:
     """Test database URL password masking."""
     settings = reload_settings()
 
@@ -28,7 +28,7 @@ def test_settings_database_url_masking(test_env):
     assert "test_pass" not in masked_url
 
 
-def test_settings_allowed_origins_parsing(test_env):
+def test_settings_allowed_origins_parsing(test_env: dict[str, str]) -> None:
     """Test APP_ALLOWED_ORIGINS parsing from string."""
     os.environ["APP_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost:8000"
     settings = reload_settings()
@@ -38,7 +38,7 @@ def test_settings_allowed_origins_parsing(test_env):
     assert "http://localhost:8000" in settings.APP_ALLOWED_ORIGINS
 
 
-def test_settings_logfire_disabled_without_token(test_env):
+def test_settings_logfire_disabled_without_token(test_env: dict[str, str]) -> None:
     """Test that Logfire is disabled when no token is provided."""
     os.environ["LOGFIRE_TOKEN"] = ""
     settings = reload_settings()
@@ -46,7 +46,7 @@ def test_settings_logfire_disabled_without_token(test_env):
     assert settings.LOGFIRE_SEND_TO_LOGFIRE is False
 
 
-def test_settings_development_debug_auto_enabled(test_env):
+def test_settings_development_debug_auto_enabled(test_env: dict[str, str]) -> None:
     """Test that debug is auto-enabled in development."""
     os.environ["APP_ENVIRONMENT"] = "development"
     os.environ["APP_DEBUG"] = "false"
@@ -55,7 +55,7 @@ def test_settings_development_debug_auto_enabled(test_env):
     assert settings.APP_DEBUG is True
 
 
-def test_settings_validation_requires_database_url():
+def test_settings_validation_requires_database_url() -> None:
     """Test that DATABASE_URL is required."""
     from pydantic import ValidationError
 
@@ -70,7 +70,7 @@ def test_settings_validation_requires_database_url():
             os.environ["DATABASE_URL"] = original_url
 
 
-def test_settings_validation_requires_google_adk_config():
+def test_settings_validation_requires_google_adk_config() -> None:
     """Test that Google ADK configuration is required."""
     from pydantic import ValidationError
 

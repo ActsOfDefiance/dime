@@ -11,7 +11,7 @@ from dime.app import create_app
 from dime.config import get_settings
 
 
-def main():
+def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="Dime Content Creation System")
     parser.add_argument("--host", default=None, help="Host to bind to")

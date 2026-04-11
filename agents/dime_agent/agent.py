@@ -5,11 +5,13 @@ Main ADK agent for content creation workflows.
 This agent coordinates research and writing for political liberation content.
 """
 
+from typing import Any
+
 from google.adk.agents import SequentialAgent, LlmAgent
 from google.adk.tools.function_tool import FunctionTool
 
 
-def research_topic(topic: str) -> dict:
+def research_topic(topic: str) -> dict[str, Any]:
     """Research a topic for content creation."""
     return {
         "status": "success",
@@ -19,7 +21,7 @@ def research_topic(topic: str) -> dict:
     }
 
 
-def write_content(research_data: dict) -> dict:
+def write_content(research_data: dict[str, Any]) -> dict[str, Any]:
     """Write content based on research."""
     return {
         "status": "success",
