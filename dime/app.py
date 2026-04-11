@@ -6,6 +6,8 @@ for automatic agent discovery and web interface integration.
 """
 
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
@@ -13,6 +15,14 @@ from google.adk.cli.fast_api import get_fast_api_app
 from dime.adapters.factory import build_adapters
 from dime.api.routes import router as dime_router
 from dime.config import get_settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Application lifespan: build adapters on startup."""
+    settings = get_settings()
+    app.state.adapters = build_adapters(settings)
+    yield
 
 
 def create_app() -> FastAPI:
@@ -42,9 +52,7 @@ def create_app() -> FastAPI:
     # Mount dime REST + WebSocket routes
     app.include_router(dime_router, prefix="/api/v1")
 
-    @app.on_event("startup")
-    async def startup() -> None:
-        app.state.adapters = build_adapters(settings)
+    app.router.lifespan_context = lifespan
 
     return app
 

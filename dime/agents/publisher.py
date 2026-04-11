@@ -1,30 +1,30 @@
 """
 Publisher Agent
 
-Main coordinator agent for the content creation system.
-Manages the research and writing workflow for political liberation content.
+Coordinates the publishing step. Unlike other agents, this is not an LLM
+agent — it calls the PublishingAdapter and records the publish event.
+The LlmAgent base is retained for ADK compatibility.
 """
 
+from typing import Any
+
 from .base import DimeBaseAgent
-from typing import List, Any
 
 
 class PublisherAgent(DimeBaseAgent):
-    """Agent that coordinates research and writing for political liberation content."""
+    """Agent that coordinates publishing via the PublishingAdapter."""
 
-    def __init__(self, sub_agents: List[Any] | None = None) -> None:
-        """Initialize publisher agent with specialized instruction."""
+    def __init__(self, sub_agents: list[Any] | None = None) -> None:
         instruction = (
-            "You are the publisher of a journal which focuses on the history of liberation struggles. "
-            "Your journal cares deeply about citing sources and accuracy, as such you require vigorous "
-            "research to be done and on any topic before producing an article. However your target audience "
-            "is the common man and so the output research needs to be condensed down into blog articles. "
+            "You are the publishing coordinator. Your role is to publish "
+            "approved articles using the configured publishing adapter and "
+            "record the publish event."
         )
 
         super().__init__(
             name="publisher",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             instruction=instruction,
-            description="Agent that coordinates research and writing for political liberation content",
+            description="Agent that coordinates article publishing",
             sub_agents=sub_agents or [],
         )
