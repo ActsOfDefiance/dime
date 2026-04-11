@@ -21,8 +21,7 @@ async def dispatch_worker_task(
     task_type = get_worker_task(state)
     if task_type is None:
         return False
-    payload: dict[str, Any] = {"article_id": str(article_id)}
-    if extra:
-        payload.update(extra)
+    payload: dict[str, Any] = dict(extra or {})
+    payload["article_id"] = str(article_id)
     await broker.dispatch_task(task_type, payload)
     return True

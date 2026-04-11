@@ -53,7 +53,7 @@ VALID_TRANSITIONS: frozenset[tuple[ArticleState, ArticleState]] = frozenset(
         # Human checkpoint: approve or reject back to art briefing
         (ArticleState.ART_REVIEW, ArticleState.ART_GENERATING),
         (ArticleState.ART_REVIEW, ArticleState.ART_BRIEFING),
-        # Human approves art generation
+        # Worker completes art generation
         (ArticleState.ART_GENERATING, ArticleState.FINAL_REVIEW),
         # Human checkpoint: approve or reject back to draft review
         (ArticleState.FINAL_REVIEW, ArticleState.APPROVED),
@@ -85,7 +85,6 @@ APPROVE_TRANSITIONS: dict[ArticleState, ArticleState] = {
     ArticleState.RESEARCH_REVIEW: ArticleState.WRITING,
     ArticleState.DRAFT_REVIEW: ArticleState.ART_BRIEFING,
     ArticleState.ART_REVIEW: ArticleState.ART_GENERATING,
-    ArticleState.ART_GENERATING: ArticleState.FINAL_REVIEW,
     ArticleState.FINAL_REVIEW: ArticleState.APPROVED,
 }
 

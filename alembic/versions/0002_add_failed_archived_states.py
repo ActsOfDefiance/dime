@@ -17,7 +17,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ALTER TYPE cannot run inside a transaction on PostgreSQL
+    # ALTER TYPE ADD VALUE cannot run inside a transaction on PostgreSQL.
+    # We must end the current transaction and use autocommit for these statements.
+    op.execute("COMMIT")
     op.execute("ALTER TYPE articlestate ADD VALUE IF NOT EXISTS 'failed'")
     op.execute("ALTER TYPE articlestate ADD VALUE IF NOT EXISTS 'archived'")
 

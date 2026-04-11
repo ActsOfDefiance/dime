@@ -132,7 +132,6 @@ class TestStateMachine:
             ArticleState.RESEARCH_REVIEW,
             ArticleState.DRAFT_REVIEW,
             ArticleState.ART_REVIEW,
-            ArticleState.ART_GENERATING,
             ArticleState.FINAL_REVIEW,
         }
         assert set(APPROVE_TRANSITIONS.keys()) == expected

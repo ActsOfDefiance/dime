@@ -269,12 +269,6 @@ class TestApproveTransitions:
             APPROVE_TRANSITIONS[ArticleState.ART_REVIEW] is ArticleState.ART_GENERATING
         )
 
-    def test_art_generating_advances_to_final_review(self) -> None:
-        assert (
-            APPROVE_TRANSITIONS[ArticleState.ART_GENERATING]
-            is ArticleState.FINAL_REVIEW
-        )
-
     def test_final_review_advances_to_approved(self) -> None:
         assert APPROVE_TRANSITIONS[ArticleState.FINAL_REVIEW] is ArticleState.APPROVED
 
