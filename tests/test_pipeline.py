@@ -150,15 +150,15 @@ class TestFailedTransitions:
                 f"{state} → FAILED should be valid"
             )
 
-    def test_checkpoint_state_not_directly_to_failed(self) -> None:
-        # Checkpoint states are not in IN_PROGRESS_STATES; failure is not expected there
+    def test_checkpoint_states_can_transition_to_failed(self) -> None:
+        # All non-terminal states (including checkpoints) can go to FAILED
         for state in CHECKPOINT_STATES:
-            assert not is_valid_transition(state, ArticleState.FAILED), (
-                f"{state} → FAILED should not be valid (it's a checkpoint)"
+            assert is_valid_transition(state, ArticleState.FAILED), (
+                f"{state} → FAILED should be valid"
             )
 
-    def test_queued_not_to_failed(self) -> None:
-        assert not is_valid_transition(ArticleState.QUEUED, ArticleState.FAILED)
+    def test_queued_can_transition_to_failed(self) -> None:
+        assert is_valid_transition(ArticleState.QUEUED, ArticleState.FAILED)
 
 
 # ---------------------------------------------------------------------------

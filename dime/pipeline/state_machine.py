@@ -65,8 +65,12 @@ VALID_TRANSITIONS: frozenset[tuple[ArticleState, ArticleState]] = frozenset(
         # Re-entry after publish
         (ArticleState.PUBLISHED, ArticleState.DRAFT_REVIEW),
         (ArticleState.PUBLISHED, ArticleState.APPROVED),
-        # Failure: any in-progress state can transition to failed
-        *((s, ArticleState.FAILED) for s in IN_PROGRESS_STATES),
+        # Failure: any non-terminal state can transition to failed
+        *(
+            (s, ArticleState.FAILED)
+            for s in ArticleState
+            if s not in (ArticleState.FAILED, ArticleState.ARCHIVED)
+        ),
         # Archive: any non-terminal state can be archived
         *(
             (s, ArticleState.ARCHIVED)

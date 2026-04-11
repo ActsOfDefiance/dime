@@ -217,8 +217,8 @@ class TestBaseWorkerErrorHandling:
         # Should complete without raising
         await worker.handle({"article_id": str(article.id)})
 
-    async def test_invalid_transition_does_not_crash(self) -> None:
-        """If run_task returns an invalid target state, worker logs and continues."""
+    async def test_invalid_transition_marks_article_failed(self) -> None:
+        """If run_task returns an invalid target state, the article is marked FAILED."""
         article = _make_article(
             state=ArticleState.QUEUED
         )  # QUEUED → PUBLISHED is invalid
@@ -233,8 +233,8 @@ class TestBaseWorkerErrorHandling:
 
         await worker.handle({"article_id": str(article.id)})
 
-        # State should be unchanged (transition was rejected)
-        assert article.state is ArticleState.QUEUED
+        # Article should be marked FAILED (invalid transition = worker logic bug)
+        assert article.state is ArticleState.FAILED
 
     async def test_failure_during_failed_mark_does_not_crash(self) -> None:
         """If marking the article as FAILED also fails, the worker should not crash."""
@@ -270,6 +270,19 @@ class TestBaseWorkerErrorHandling:
 
         # Should complete without raising
         await worker.handle({"article_id": str(article.id)})
+
+    async def test_stop_event_prevents_additional_iterations(self) -> None:
+        """stop() should cause the consume loop to exit after the current batch."""
+        broker = AsyncMock()
+        broker.consume = AsyncMock()
+        factory = _make_session_factory(None)
+        worker = ResearchWorker(broker=broker, session_factory=factory)
+
+        # stop() before start() means the loop body never executes
+        worker.stop()
+        await worker.start()
+
+        broker.consume.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

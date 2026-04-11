@@ -125,7 +125,7 @@ class TestStateMachine:
         assert is_valid_transition(ArticleState.QUEUED, ArticleState.QUEUED) is False
 
     def test_all_valid_transitions_are_reachable(self) -> None:
-        assert len(VALID_TRANSITIONS) == 35
+        assert len(VALID_TRANSITIONS) == 42
 
     def test_approve_transitions_cover_all_review_states(self) -> None:
         expected = {

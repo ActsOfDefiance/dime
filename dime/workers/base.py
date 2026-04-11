@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -32,6 +33,11 @@ class BaseWorker(ABC):
     ) -> None:
         self._broker = broker
         self._session_factory = session_factory
+        self._stop_event = asyncio.Event()
+
+    def stop(self) -> None:
+        """Signal the consume loop to exit after the current batch completes."""
+        self._stop_event.set()
 
     @abstractmethod
     async def run_task(
@@ -45,8 +51,29 @@ class BaseWorker(ABC):
         mark the article as FAILED.
         """
 
+    async def _mark_failed(self, article_id: uuid.UUID) -> None:
+        """Open a fresh session and mark *article_id* as FAILED."""
+        try:
+            async with self._session_factory() as fail_db:
+                fail_article = await fail_db.get(Article, article_id)
+                if fail_article is not None:
+                    transition(fail_article.state, ArticleState.FAILED)
+                    fail_article.state = ArticleState.FAILED
+                    await fail_db.commit()
+                    logger.info("Article %s marked as failed", article_id)
+        except Exception:  # noqa: BLE001
+            logger.exception("Could not mark article %s as failed", article_id)
+
     async def handle(self, payload: dict[str, Any]) -> None:
-        """Process one task payload: run agent, apply transition, persist."""
+        """Process one task payload: run agent, apply transition, persist.
+
+        Design note: exceptions from run_task() are caught here and the article is
+        marked FAILED rather than re-raised. This is intentional — per spec, agent
+        failures are permanent (the human restarts the pipeline via the API). The
+        broker message is acknowledged so we avoid infinite retry loops on hard
+        failures (e.g. a corrupt article record). Transient infrastructure errors
+        (network timeouts, etc.) should ideally be retried inside run_task() itself.
+        """
         raw_id = payload.get("article_id")
         if not raw_id:
             logger.error("Task payload missing article_id: %s", payload)
@@ -79,27 +106,26 @@ class BaseWorker(ABC):
                         article_id,
                     )
             except InvalidTransitionError as exc:
-                logger.error("Invalid transition for article %s: %s", article_id, exc)
+                # run_task() returned an invalid target state — treat as a worker bug
+                # and mark the article FAILED so it surfaces for human review.
+                logger.error(
+                    "Invalid transition for article %s: %s — marking FAILED",
+                    article_id,
+                    exc,
+                )
                 await db.rollback()
+                await self._mark_failed(article_id)
             except Exception as exc:  # noqa: BLE001
                 logger.exception("Agent failure for article %s: %s", article_id, exc)
-                try:
-                    await db.rollback()
-                    async with self._session_factory() as fail_db:
-                        fail_article = await fail_db.get(Article, article_id)
-                        if fail_article is not None:
-                            fail_article.state = ArticleState.FAILED
-                            await fail_db.commit()
-                            logger.info("Article %s marked as failed", article_id)
-                except Exception:  # noqa: BLE001
-                    logger.exception("Could not mark article %s as failed", article_id)
+                await db.rollback()
+                await self._mark_failed(article_id)
 
     async def start(self, max_count: int = 10, block_ms: int = 5000) -> None:
-        """Run the consume loop indefinitely."""
+        """Run the consume loop until stop() is called."""
         logger.info(
             "Worker %s started, consuming '%s'", type(self).__name__, self.task_type
         )
-        while True:
+        while not self._stop_event.is_set():
             await self._broker.consume(
                 self.task_type,
                 self.handle,
