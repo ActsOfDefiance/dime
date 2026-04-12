@@ -34,43 +34,47 @@ async def run_agent(agent: LlmAgent, input_text: str) -> str:
     Raises:
         RuntimeError: If the agent execution fails entirely.
     """
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=agent,
-        app_name=APP_NAME,
-        session_service=session_service,
-    )
+    try:
+        session_service = InMemorySessionService()
+        runner = Runner(
+            agent=agent,
+            app_name=APP_NAME,
+            session_service=session_service,
+        )
 
-    session = await session_service.create_session(
-        app_name=APP_NAME,
-        user_id=USER_ID,
-    )
+        session = await session_service.create_session(
+            app_name=APP_NAME,
+            user_id=USER_ID,
+        )
 
-    content = types.Content(
-        role="user",
-        parts=[types.Part(text=input_text)],
-    )
+        content = types.Content(
+            role="user",
+            parts=[types.Part(text=input_text)],
+        )
 
-    final_text = ""
-    fallback_parts: list[str] = []
-    async for event in runner.run_async(  # pyright: ignore[reportUnknownMemberType]
-        user_id=USER_ID,
-        session_id=session.id,
-        new_message=content,
-    ):
-        if event.content and event.content.parts:
-            event_text = "".join(
-                p.text for p in event.content.parts if hasattr(p, "text") and p.text
-            )
-            if event_text:
-                fallback_parts.append(event_text)
+        final_text = ""
+        fallback_parts: list[str] = []
+        async for event in runner.run_async(  # pyright: ignore[reportUnknownMemberType]
+            user_id=USER_ID,
+            session_id=session.id,
+            new_message=content,
+        ):
+            if event.content and event.content.parts:
+                event_text = "".join(
+                    p.text for p in event.content.parts if hasattr(p, "text") and p.text
+                )
+                if event_text:
+                    fallback_parts.append(event_text)
 
-            if (
-                hasattr(event, "is_final_response")
-                and callable(event.is_final_response)
-                and event.is_final_response()
-            ):
-                final_text += event_text
+                if (
+                    hasattr(event, "is_final_response")
+                    and callable(event.is_final_response)
+                    and event.is_final_response()
+                ):
+                    final_text += event_text
+
+    except Exception as exc:
+        raise RuntimeError(f"Agent execution failed for '{agent.name}': {exc}") from exc
 
     if not final_text and fallback_parts:
         logger.warning("No final response detected — collecting all text events")
