@@ -229,6 +229,39 @@ class TestToolFactories:
         result = tool("empty/")  # type: ignore[operator]
         assert "No files found" in result
 
+    def test_make_read_tool_rejects_traversal(self) -> None:
+        """make_read_tool rejects path traversal attempts."""
+        mock_fs = MagicMock()
+        tool = make_read_tool(mock_fs)
+        result = tool("../../etc/passwd")  # type: ignore[operator]
+        assert "Error" in result
+        assert "escapes" in result
+        mock_fs.read.assert_not_called()
+
+    def test_make_read_tool_rejects_absolute_path(self) -> None:
+        """make_read_tool rejects absolute paths."""
+        mock_fs = MagicMock()
+        tool = make_read_tool(mock_fs)
+        result = tool("/etc/passwd")  # type: ignore[operator]
+        assert "Error" in result
+        mock_fs.read.assert_not_called()
+
+    def test_make_write_tool_rejects_traversal(self) -> None:
+        """make_write_tool rejects path traversal attempts."""
+        mock_fs = MagicMock()
+        tool = make_write_tool(mock_fs)
+        result = tool("../evil.sh", "bad")  # type: ignore[operator]
+        assert "Error" in result
+        mock_fs.write.assert_not_called()
+
+    def test_make_list_tool_rejects_traversal(self) -> None:
+        """make_list_tool rejects path traversal attempts."""
+        mock_fs = MagicMock()
+        tool = make_list_tool(mock_fs)
+        result = tool("../../")  # type: ignore[operator]
+        assert "Error" in result
+        mock_fs.list.assert_not_called()
+
     def test_make_search_tool(self) -> None:
         """make_search_tool returns a callable (stub or GoogleSearchTool)."""
         tool = make_search_tool()

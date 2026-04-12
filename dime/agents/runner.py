@@ -52,25 +52,28 @@ async def run_agent(agent: LlmAgent, input_text: str) -> str:
     )
 
     final_text = ""
+    fallback_parts: list[str] = []
     async for event in runner.run_async(  # pyright: ignore[reportUnknownMemberType]
         user_id=USER_ID,
         session_id=session.id,
         new_message=content,
     ):
-        if (
-            event.content
-            and event.content.parts
-            and hasattr(event, "is_final_response")
-            and callable(event.is_final_response)
-            and event.is_final_response()
-        ):
-            for part in event.content.parts:
-                if hasattr(part, "text") and part.text:
-                    final_text += part.text
+        if event.content and event.content.parts:
+            event_text = "".join(
+                p.text for p in event.content.parts if hasattr(p, "text") and p.text
+            )
+            if event_text:
+                fallback_parts.append(event_text)
 
-    if not final_text:
-        # Fallback: collect any text from any event if is_final_response
-        # was not available (ADK version differences).
+            if (
+                hasattr(event, "is_final_response")
+                and callable(event.is_final_response)
+                and event.is_final_response()
+            ):
+                final_text += event_text
+
+    if not final_text and fallback_parts:
         logger.warning("No final response detected — collecting all text events")
+        final_text = "".join(fallback_parts)
 
     return final_text
