@@ -11,6 +11,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+try:
+    from google.adk.tools.google_search_tool import GoogleSearchTool  # pyright: ignore[reportMissingImports]
+except ImportError:
+    GoogleSearchTool = None  # pyright: ignore[reportConstantRedefinition]
+
 
 def make_search_tool() -> object:
     """Create a web search tool for research agents.
@@ -18,16 +23,13 @@ def make_search_tool() -> object:
     Attempts to use ADK's built-in GoogleSearchTool for grounding.
     Falls back to a stub implementation if unavailable.
     """
-    try:
-        from google.adk.tools.google_search_tool import GoogleSearchTool  # pyright: ignore[reportMissingImports]
-
-        return GoogleSearchTool()
-    except (ImportError, Exception):
+    if GoogleSearchTool is None:
         logger.warning(
             "GoogleSearchTool unavailable — using stub search tool. "
             "Set up Grounding with Google Search for production use."
         )
         return _stub_search
+    return GoogleSearchTool()
 
 
 def _stub_search(query: str) -> str:

@@ -8,6 +8,7 @@ from typing import Any
 from dime.adapters.protocols import BrokerAdapter, FileSystemAdapter
 from dime.agents.runner import run_agent
 from dime.agents.tools.filesystem_tools import make_read_tool, make_write_tool
+from dime.agents.researcher import ResearcherAgent
 from dime.agents.tools.search_tools import make_search_tool
 from dime.models.article import Article
 from dime.pipeline.states import ArticleState
@@ -25,8 +26,6 @@ class ResearchWorker(BaseWorker):
         self, article: Article, payload: dict[str, Any]
     ) -> ArticleState | None:
         """Run the research agent for *article*."""
-        from dime.agents.researcher import ResearcherAgent
-
         async with self._session_factory() as db:
             project = await self._load_project(db, article.project_id)
             content_guide = project.content_guide

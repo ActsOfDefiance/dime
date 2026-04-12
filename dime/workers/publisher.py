@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from dime.adapters.protocols import BrokerAdapter, FileSystemAdapter, PublishingAdapter
+from dime.agents.publisher import PublisherAgent
 from dime.models.article import Article
 from dime.pipeline.states import ArticleState
 from dime.workers.base import BaseWorker
@@ -33,8 +34,6 @@ class PublisherWorker(BaseWorker):
         self, article: Article, payload: dict[str, Any]
     ) -> ArticleState | None:
         """Publish the article via the PublishingAdapter (no LLM)."""
-        from dime.agents.publisher import PublisherAgent
-
         agent = PublisherAgent(
             publishing=self._publishing,
             filesystem=self._filesystem,

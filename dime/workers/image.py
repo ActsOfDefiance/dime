@@ -9,6 +9,7 @@ from typing import Any
 from dime.adapters.protocols import BrokerAdapter, FileSystemAdapter
 from dime.agents.runner import run_agent
 from dime.agents.tools.filesystem_tools import make_write_tool
+from dime.agents.image import ImageAgent
 from dime.agents.tools.image_tools import make_image_generation_tool
 from dime.models.article import Article
 from dime.models.image_slot import ImageSlot
@@ -31,8 +32,6 @@ class ImageWorker(BaseWorker):
         self, article: Article, payload: dict[str, Any]
     ) -> ArticleState | None:
         """Generate image variants for one slot; return None (no state transition)."""
-        from dime.agents.image import ImageAgent
-
         raw_slot_id = payload.get("slot_id")
         if not raw_slot_id:
             raise ValueError("Image task payload missing slot_id")
