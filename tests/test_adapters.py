@@ -32,6 +32,7 @@ from dime.adapters.protocols import (
     NotificationAdapter,
     PublishingAdapter,
 )
+from dime.adapters.publishing.astro import AstroAdapter
 from dime.adapters.publishing.hugo import HugoPublishingAdapter
 from dime.config.settings import reload_settings
 
@@ -341,11 +342,11 @@ class TestAdapterFactory:
             result = build_adapters(settings)
         assert isinstance(result.filesystem, LocalFileSystemAdapter)
 
-    def test_build_adapters_publishing_is_hugo(self, test_env: Any) -> None:
+    def test_build_adapters_publishing_is_astro(self, test_env: Any) -> None:
         settings = reload_settings()
         with patch("redis.asyncio.from_url"):
             result = build_adapters(settings)
-        assert isinstance(result.publishing, HugoPublishingAdapter)
+        assert isinstance(result.publishing, AstroAdapter)
 
     def test_build_adapters_notification_is_websocket(self, test_env: Any) -> None:
         settings = reload_settings()

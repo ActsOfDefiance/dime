@@ -133,6 +133,13 @@ class DimeSettings(BaseSettings):
     # ==========================================================================
     HUGO_CONTENT_DIR: str = "./hugo-content"
 
+    # Astro adapter settings
+    ASTRO_ART_DIR: str = "./art"
+    ASTRO_PUBLIC_DIR: str = "./acts-of-defiance/public/images/articles"
+    ASTRO_SIGNAL_FILE: str = "./acts-of-defiance/.rebuild-signal"
+    ASTRO_CONTENT_BASE: str = "./compendium"
+    ASTRO_PREVIEW_HOST: str = ""
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize settings with environment validation."""
         super().__init__(**kwargs)  # pyright: ignore[reportUnknownArgumentType]

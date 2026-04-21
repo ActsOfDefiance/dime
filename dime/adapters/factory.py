@@ -11,7 +11,7 @@ from dime.adapters.protocols import (
     NotificationAdapter,
     PublishingAdapter,
 )
-from dime.adapters.publishing.hugo import HugoPublishingAdapter
+from dime.adapters.publishing.astro import AstroAdapter
 from dime.config.settings import DimeSettings
 
 
@@ -33,8 +33,12 @@ def build_adapters(settings: DimeSettings) -> AdapterSet:
     filesystem: FileSystemAdapter = LocalFileSystemAdapter(
         base_path=settings.STORAGE_BASE_PATH
     )
-    publishing: PublishingAdapter = HugoPublishingAdapter(
-        content_dir=settings.HUGO_CONTENT_DIR
+    publishing: PublishingAdapter = AstroAdapter(
+        art_dir=settings.ASTRO_ART_DIR,
+        acts_of_defiance_public_dir=settings.ASTRO_PUBLIC_DIR,
+        signal_file_path=settings.ASTRO_SIGNAL_FILE,
+        content_base=settings.ASTRO_CONTENT_BASE,
+        preview_host=settings.ASTRO_PREVIEW_HOST,
     )
     notification: NotificationAdapter = WebSocketNotificationAdapter()
     return AdapterSet(
